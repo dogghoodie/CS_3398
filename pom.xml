@@ -1,0 +1,63 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>Group3</groupId>
+    <artifactId>Clipper</artifactId>
+    <version>1.0</version> <!-- 1.0.0 upon final -->
+
+    <dependencies>
+        <!-- JSON Simple Dependency -->
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version> <!-- Use the latest version available -->
+        </dependency>
+	</dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version> <!-- Use a recent version -->
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>Clipper</mainClass> <!-- Replace with your actual main class -->
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-assembly-plugin</artifactId>
+                            <version>3.3.0</version> <!-- Use the latest version available -->
+                            <configuration>
+                                <!-- Specify the assembly descriptor -->
+                                <archive>
+                                    <manifest>
+                                        <mainClass>Clipper</mainClass>
+                                    </manifest>
+                                </archive>
+                                <descriptorRefs>
+                                    <descriptorRef>jar-with-dependencies</descriptorRef>
+                                </descriptorRefs>
+                            </configuration>
+                            <executions>
+                                <execution>
+                                    <id>make-assembly</id> <!-- This is used for inheritance merges -->
+                                    <phase>package</phase> <!-- Bind to the packaging phase -->
+                                    <goals>
+                                        <goal>single</goal> <!-- Goal: create a single fat JAR -->
+                                    </goals>
+                                </execution>
+                            </executions>
+            </plugin>
+        </plugins>
+    </build>
+    <!-- Additional configurations like build, properties, etc. -->
+</project>
+
