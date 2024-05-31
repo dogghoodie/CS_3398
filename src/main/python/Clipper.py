@@ -1,5 +1,8 @@
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 
+# This is actually a little fucked up doesn't combine correctly
+
+
 def combine_videos(video1_path, video2_path, output_path):
     # Load clips
     clip1 = VideoFileClip(video1_path)
@@ -16,7 +19,7 @@ if __name__ == "__main__":
     video1_path = input("Path to video 1: ")
     video2_path = input("Path to video 2: ")
     output_path = input("Path for result: ")
-    
+         
     # Combine the videos
     combine_videos(video1_path, video2_path, output_path)
-
+     
