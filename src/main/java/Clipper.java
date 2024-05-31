@@ -4,3 +4,4 @@ class Clipper {
 		System.out.println("Clipper.");
 	}
 }
+
