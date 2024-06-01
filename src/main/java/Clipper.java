@@ -24,14 +24,14 @@ public class Clipper {
 			ProcessBuilder processBuilder = new ProcessBuilder(command);
 			Process process = processBuilder.start();
 			
-			// Get the output from the process
+			// Get the output
 			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 			String line;
 			while ((line = reader.readLine()) != null) {
 				System.out.println(line);
 		}
             
-			// Get the error output from the process
+			// Get any errors
 			BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 			while ((line = errorReader.readLine()) != null) {
 				System.err.println(line);
