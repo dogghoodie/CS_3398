@@ -1,5 +1,4 @@
 from moviepy.editor import VideoFileClip, concatenate_videoclips
-import sys
 
 def combine_videos(video1_path, video2_path, output_path):
     # Load clips
@@ -13,14 +12,10 @@ def combine_videos(video1_path, video2_path, output_path):
     final_clip.write_videofile(output_path, codec='libx264')
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python Clipper.py <video1_path> <video2_path> <output_path>")
-        sys.exit(1)
-
-    video1_path = sys.argv[1]
-    video2_path = sys.argv[2]
-    output_path = sys.argv[3]
+    # Define the paths to the input videos and the output video
+    video1_path = input("Path to video 1: ")
+    video2_path = input("Path to video 2: ")
+    output_path = input("Path for result: ")
 
     # Combine the videos
-    combine_videos(video1_path, video2_path, output_path)
-
+    combine_videos(video1_path, video2_path, output_path)    
