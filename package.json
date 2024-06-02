@@ -1,0 +1,23 @@
+{
+  "name": "ezmerge",
+  "version": "1.0.0-SETUP",
+  "description": "EZmerge simplifies video editing for hobbyists and casual users by providing a user-friendly application to merge multiple video clips into a single continuous file. This project is especially valuable for drone enthusiasts and amateur videographers who face the challenge of handling video files that are automatically split by devices like the DJI Mini 4 Pro. With EZmerge, merging video clips is quick, easy, and doesn’t require the complex features of professional editing software.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dogghoodie/CS_3398.git"
+  },
+  "author": "CS3398 G4",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dogghoodie/CS_3398/issues"
+  },
+  "homepage": "https://github.com/dogghoodie/CS_3398#readme",
+  "devDependencies": {
+    "electron": "^30.0.9"
+  }
+}
