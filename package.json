@@ -19,5 +19,9 @@
   "homepage": "https://github.com/dogghoodie/CS_3398#readme",
   "devDependencies": {
     "electron": "^30.0.9"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.3"
   }
 }
