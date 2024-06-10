@@ -21,6 +21,7 @@
     "electron": "^30.0.9"
   },
   "dependencies": {
+    "bulma": "^1.0.1",
     "ffmpeg-static": "^5.2.0",
     "fluent-ffmpeg": "^2.1.3"
   }
