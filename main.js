@@ -1,9 +1,30 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs')        // needed to pull all files behind a path
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 
 ffmpeg.setFfmpegPath(ffmpegPath);
+
+function getAllFiles(dirPath, formats, arrayOfFiles) {
+  let files = fs.readdirSync(dirPath);
+
+  arrayOfFiles = arrayOfFiles || [];
+
+  files.forEach(function(file) {
+    const fullPath = path.join(dirPath, file);
+    if (fs.statSync(fullPath).isDirectory()) {
+      arrayOfFiles = getAllFiles(fullPath, formats, arrayOfFiles);
+    } else {
+      const ext = path.extname(file).toLowerCase();
+      if (formats.includes(ext)) {
+        arrayOfFiles.push(fullPath);
+      }
+    }
+  });
+
+  return arrayOfFiles;
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -33,14 +54,11 @@ app.on('activate', () => {
   }
 });
 
-ipcMain.handle('concat-videos', async (event, file1, file2, output) => {
-  return new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(file1)
-      .input(file2)
-      .on('end', () => resolve('Video concatenation completed'))
-      .on('error', (err) => reject(`Error: ${err.message}`))
-      .mergeToFile(output, './tempDir');
-  });
+ipcMain.handle('query-files', async (event, dirPath, formats) => {
+  try {
+    const files = getAllFiles(dirPath, formats);
+    return files;
+  } catch (error) {
+    throw new Error('Failed to read directory contents: ' + error.message);
+  }
 });
-
