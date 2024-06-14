@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const panel3 = document.getElementById('panel3');
 
     // GET Core
-    async function initialize() {
+    async function initializeCore() {
       try {
         Core = await window.api.getCore();
         console.log('Initial Core in Renderer.js:', Core);
@@ -16,8 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    initialize();
-
     // SET Core
     async function updateCore(newData) {
       Core = { ...Core, ...newData };
@@ -25,12 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Updated Core in Renderer.js:', Core); 
     }
 
-    // update ordered list function
+    // PANEL 2: Update HTML element with fileList
     function updateOrderedList() {
       panel2.innerHTML = '<ul>' + Core.fileList.map(file => `<li>${file}</li>`).join('') + '</ul>';
     }
   
-    // PANEL 1 DRAG & DROP
+    // PANEL 1:  DRAG & DROP
     panel1.addEventListener('dragover', (event) => {
       event.preventDefault();
       panel1.style.borderColor = '#00f'; // Change border color to indicate valid drop zone
@@ -62,11 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Initial update of the ordered list
-    updateOrderedList();
-
     // END OF PANEL 1 DRAG & DROP
 
+
+    // INITIALIZATIONS
+    updateOrderedList();
+    initializeCore();
 
   });
   
