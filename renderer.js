@@ -7,16 +7,16 @@ document.addEventListener('DOMContentLoaded', () => {
   
     panel1.addEventListener('dragover', (event) => {
       event.preventDefault();
-      panel1.style.borderColor = '#00f'; // Change border color to indicate valid drop zone
+      panel1.style.borderColor = '#00f'; // indicates valid drop zone
     });
   
     panel1.addEventListener('dragleave', () => {
-      panel1.style.borderColor = '#ccc'; // Revert border color when not dragging over
+      panel1.style.borderColor = '#ccc'; // back to default when not hovering over area
     });
   
     panel1.addEventListener('drop', async (event) => {
       event.preventDefault();
-      panel1.style.borderColor = '#ccc'; // Revert border color on drop
+      panel1.style.borderColor = '#ccc'; // back to default after dropped
   
       const files = event.dataTransfer.files;
       if (files.length > 0) {
