@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const files = event.dataTransfer.files; // What did they drop?
 
     if (files.length > 0) {
-      for (let i = 0; i < files.length; i++)
+      for (let i = 0; i < files.length; i++)    // iterate through multiple files dropped
         {
         const filePath = files[i].path;
         try {

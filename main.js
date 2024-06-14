@@ -82,6 +82,7 @@ function getAllFiles(dirPath, formats, arrayOfFiles) {
 
 // query-files
 // Renderer.js.Panel1 -> IPC.query-files() -> main.js.getAllFiles()
+// calls getAllFiles() function, returns an array of strings.
 ipcMain.handle('query-files', async (event, dirPath, formats) => {
   try {
     const files = getAllFiles(dirPath, formats);
@@ -93,6 +94,7 @@ ipcMain.handle('query-files', async (event, dirPath, formats) => {
 
 // get-core
 // Renderer.js() -> IPC.get-core() -> main.js.Core
+// reads property "Core" from main. Returns Core object.
 ipcMain.handle('get-core', async () => {
   console.log('Core in main process:', Core);
   return Core;
@@ -100,14 +102,15 @@ ipcMain.handle('get-core', async () => {
 
 // set-core
 // Renderer.js() -> IPC.set-core() -> main.js.Core
+// writes status of Core struct from renderer.js to main.js
 ipcMain.handle('set-core', async (event, newCore) => {
   Core = { ...Core, ...newCore };
   console.log('Updated Core in main process:', Core);
 });
 
 // get-stats
-// used to facilitate access by renderer.js to fs
 // Renderer.js() -> IPC(get-stats) -> main.js()
+// renderer.js needs to us 'fs' library in order to read file properties
 ipcMain.handle('get-stats', async (event, filePath) => {
   try {
     const stats = fs.statSync(filePath);
