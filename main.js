@@ -3,8 +3,15 @@ const path = require('path');
 const fs = require('fs')        // needed to pull all files behind a path
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
-
 ffmpeg.setFfmpegPath(ffmpegPath);
+
+// create Core struct 
+let Core = {
+  state: "idle",
+  fileList: [],
+  outputPath: "",
+  percentage: 0
+};
 
 function getAllFiles(dirPath, formats, arrayOfFiles) {
   let files = fs.readdirSync(dirPath);
@@ -23,6 +30,7 @@ function getAllFiles(dirPath, formats, arrayOfFiles) {
     }
   });
 
+  
   return arrayOfFiles;
 }
 
@@ -61,4 +69,14 @@ ipcMain.handle('query-files', async (event, dirPath, formats) => {
   } catch (error) {
     throw new Error('Failed to read directory contents: ' + error.message);
   }
+});
+
+ipcMain.handle('get-core', async () => {
+  console.log('Core in main process:', Core);
+  return Core;
+});
+
+ipcMain.handle('set-core', async (event, newCore) => {
+  Core = { ...Core, ...newCore };
+  console.log('Updated Core in main process:', Core);
 });

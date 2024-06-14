@@ -1,10 +1,36 @@
 document.addEventListener('DOMContentLoaded', () => {
+
+    // BASELINE DECLARATIONS
     const panel1 = document.getElementById('panel1');
-    const panel2 = document.getElementById('panel2'); // For displaying the ordered list
+    const panel2 = document.getElementById('panel2'); 
+    const panel3 = document.getElementById('panel3');
+
+    // GET Core
+    async function initialize() {
+      try {
+        Core = await window.api.getCore();
+        console.log('Initial Core in Renderer.js:', Core);
+        updateOrderedList();
+      } catch (error) {
+        console.error('Error initializing Core:', error.message);
+      }
+    }
+
+    initialize();
+
+    // SET Core
+    async function updateCore(newData) {
+      Core = { ...Core, ...newData };
+      await window.api.setCore(Core);
+      console.log('Updated Core in Renderer.js:', Core); 
+    }
+
+    // update ordered list function
+    function updateOrderedList() {
+      panel2.innerHTML = '<ul>' + Core.fileList.map(file => `<li>${file}</li>`).join('') + '</ul>';
+    }
   
-    // Array to hold the ordered list of file paths
-    const fileList = [];
-  
+    // PANEL 1 DRAG & DROP
     panel1.addEventListener('dragover', (event) => {
       event.preventDefault();
       panel1.style.borderColor = '#00f'; // Change border color to indicate valid drop zone
@@ -24,19 +50,23 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const newFiles = await window.api.queryFiles(dirPath, ['.mp4']); // Adjust formats as needed
           newFiles.forEach(file => {
-            if (!fileList.includes(file)) { // Avoid duplicate entries
-              fileList.push(file);
+            if (!Core.fileList.includes(file)) { // Avoid duplicate entries
+              Core.fileList.push(file);
             }
           });
+          await updateCore({ fileList: Core.fileList });
           updateOrderedList();
         } catch (error) {
           console.error('Error querying files:', error.message);
         }
       }
     });
-  
-    function updateOrderedList() {
-      panel2.innerHTML = '<ul>' + fileList.map(file => `<li>${file}</li>`).join('') + '</ul>';
-    }
+
+    // Initial update of the ordered list
+    updateOrderedList();
+
+    // END OF PANEL 1 DRAG & DROP
+
+
   });
   
