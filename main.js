@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const fs = require('fs');                 // needed to pull all files behind a path
+const fs = require('fs');                     // needed to query file system
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -52,7 +52,7 @@ app.on('activate', () => {
 //* **************************************** *//
 
 // getAllFiles:
-// Renderer.js(Panel 1) -> IPC(query-files) -> main.js(getAllFiles)
+// Renderer.js.Panel1 -> IPC.query-files() -> main.js.getAllFiles()
 // Recursive Function
 function getAllFiles(dirPath, formats, arrayOfFiles) {
   let files = fs.readdirSync(dirPath);
@@ -81,7 +81,7 @@ function getAllFiles(dirPath, formats, arrayOfFiles) {
 //* **************************************** *//
 
 // query-files
-// Renderer.js(Panel 1) -> IPC(query-files) -> main.js(getAllFiles)
+// Renderer.js.Panel1 -> IPC.query-files() -> main.js.getAllFiles()
 ipcMain.handle('query-files', async (event, dirPath, formats) => {
   try {
     const files = getAllFiles(dirPath, formats);
@@ -92,14 +92,14 @@ ipcMain.handle('query-files', async (event, dirPath, formats) => {
 });
 
 // get-core
-// Renderer.js() -> IPC(get-core) -> main.js(Core)
+// Renderer.js() -> IPC.get-core() -> main.js.Core
 ipcMain.handle('get-core', async () => {
   console.log('Core in main process:', Core);
   return Core;
 });
 
 // set-core
-// Renderer.js() -> IPC(set-core) -> main.js(Core)
+// Renderer.js() -> IPC.set-core() -> main.js.Core
 ipcMain.handle('set-core', async (event, newCore) => {
   Core = { ...Core, ...newCore };
   console.log('Updated Core in main process:', Core);
@@ -115,6 +115,14 @@ ipcMain.handle('get-stats', async (event, filePath) => {
     console.log(stats.isDirectory());
     console.log(stats.isFile());
     return {
+
+      /*
+        for some reason, I can return the stats object, but
+        it doesn't keep the methods associated with that object
+        when I try to call it in renderer.js. So for now I'm
+        only returning the necessary properties.
+      */
+
       isDirectory: stats.isDirectory(),
       isFile: stats.isFile(),
     };
@@ -122,3 +130,20 @@ ipcMain.handle('get-stats', async (event, filePath) => {
     throw new Error('Failed to get file stats: ' + error.message);
   }
 });
+
+/*
+
+OLD GET STATS: Returns stats object, but methods don't work after? Worth revisiting. 
+
+ipcMain.handle('get-stats', async (event, filePath) => {
+  try {
+    const stats = fs.statSync(filePath);
+    return stats;
+  } catch (error) {
+    throw new Error('Failed to get file stats: ' + error.message);
+  }
+
+*/
+
+
+

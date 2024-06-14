@@ -64,35 +64,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const files = event.dataTransfer.files; // What did they drop?
 
     if (files.length > 0) {
-      const filePath = files[0].path;
-      try {
-        const stats = await window.api.getStats(filePath);
+      for (let i = 0; i < files.length; i++)
+        {
+        const filePath = files[i].path;
+        try {
+          const stats = await window.api.getStats(filePath);
 
-        console.log(stats);
-        console.log("panel 1 drop: isDir? ", stats.isDirectory);
-        console.log("panel 1 drop: isFile? ", stats.isFile);
+          console.log(stats);
+          console.log("panel 1 drop: isDir? ", stats.isDirectory);
+          console.log("panel 1 drop: isFile? ", stats.isFile);
 
-        if (stats.isDirectory) {
-          // If it's a directory, query all files in the directory
-          const newFiles = await window.api.queryFiles(filePath, ['.mp4']); // Adjust formats as needed
-          newFiles.forEach(file => {
-            if (!Core.fileList.includes(file)) { // Avoid duplicate entries
-              Core.fileList.push(file);
+          if (stats.isDirectory) {
+            // If it's a directory, query all files in the directory
+            const newFiles = await window.api.queryFiles(filePath, ['.mp4']); // Adjust formats as needed
+            newFiles.forEach(file => {
+              if (!Core.fileList.includes(file)) { // Avoid duplicate entries
+                Core.fileList.push(file);
+              }
+            });
+          } else if (stats.isFile) {
+            // If it's a file, directly add the file to Core.fileList
+            if (!Core.fileList.includes(filePath)) { // Avoid duplicate entries
+              Core.fileList.push(filePath);
             }
-          });
-        } else if (stats.isFile) {
-          // If it's a file, directly add the file to Core.fileList
-          if (!Core.fileList.includes(filePath)) { // Avoid duplicate entries
-            Core.fileList.push(filePath);
           }
+
+          await updateCore({ fileList: Core.fileList });
+          updateOrderedList();
+        } catch (error) {
+          console.error('Error querying files:', error.message);
         }
 
-        await updateCore({ fileList: Core.fileList });
-        updateOrderedList();
-      } catch (error) {
-        console.error('Error querying files:', error.message);
       }
+
     }
+      
   });
 
 });
