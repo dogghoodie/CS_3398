@@ -93,7 +93,7 @@ ipcMain.handle('query-files', async (event, dirPath, formats) => {
 });
 
 // get-core
-// Renderer.js() -> IPC.get-core() -> main.js.Core
+// Renderer.js -> IPC.get-core() -> main.js.Core
 // reads property "Core" from main. Returns Core object.
 ipcMain.handle('get-core', async () => {
   console.log('Core in main process:', Core);
@@ -101,7 +101,7 @@ ipcMain.handle('get-core', async () => {
 });
 
 // set-core
-// Renderer.js() -> IPC.set-core() -> main.js.Core
+// Renderer.js -> IPC.set-core() -> main.js.Core
 // writes status of Core struct from renderer.js to main.js
 ipcMain.handle('set-core', async (event, newCore) => {
   Core = { ...Core, ...newCore };
@@ -109,7 +109,7 @@ ipcMain.handle('set-core', async (event, newCore) => {
 });
 
 // get-stats
-// Renderer.js() -> IPC(get-stats) -> main.js()
+// Renderer.js.Panel1 -> IPC.get-stats() -> main.js()
 // renderer.js needs to us 'fs' library in order to read file properties
 ipcMain.handle('get-stats', async (event, filePath) => {
   try {
@@ -134,19 +134,16 @@ ipcMain.handle('get-stats', async (event, filePath) => {
   }
 });
 
-/*
-
-OLD GET STATS: Returns stats object, but methods don't work after? Worth revisiting. 
-
-ipcMain.handle('get-stats', async (event, filePath) => {
-  try {
-    const stats = fs.statSync(filePath);
-    return stats;
-  } catch (error) {
-    throw new Error('Failed to get file stats: ' + error.message);
-  }
-
-*/
-
-
-
+// concat-videos
+// Renderer.js.Panel3 -> IPC.concat-videos() -> ffmpeg
+// Calls ffmpeg concat execution
+ipcMain.handle('concat-videos', async (event, file1, file2, output) => {
+  return new Promise((resolve, reject) => {
+    ffmpeg()
+      .input(file1)
+      .input(file2)
+      .on('end', () => resolve('Video concatenation completed'))
+      .on('error', (err) => reject(`Error: ${err.message}`))
+      .mergeToFile(output, './tempDir');
+  });
+});
