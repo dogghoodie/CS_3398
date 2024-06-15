@@ -1,3 +1,5 @@
+// main.js (node layer)
+
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');                     // needed to query file system
@@ -19,8 +21,26 @@ let Core = {
 //             WINDOW LAUNCH                  //
 //* **************************************** *//
 
-function createWindow() {
-  const win = new BrowserWindow({
+
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    frameless: true,
+    alwaysOnTop: true,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  });
+  splashWindow.loadFile('splash.html');
+
+  splashWindow.on('closed', () => {
+    splashWindow = null;
+  });
+}
+
+function createMainWindow() {
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -30,10 +50,23 @@ function createWindow() {
     },
   });
 
-  win.loadFile('index.html');
+  mainWindow.loadFile('index.html');
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
 }
 
-app.whenReady().then(createWindow);
+
+app.whenReady().then(() => {
+  createSplashWindow();
+  setTimeout(() => {
+    if (splashWindow) {
+      splashWindow.close();
+    }
+    createMainWindow();
+  }, 1500); // Splash Duration Time
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

@@ -37,6 +37,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // PANEL 3: Handle output path button event
+  setOutputPathButton.addEventListener('click', async () => {
+    const outputPath = outputPathInput.value;
+    if (outputPath) {
+      await updateCore({ outputPath: outputPath });
+      console.log('Output path set to:', outputPath);
+    } else {
+      console.error('Output path is empty');
+    }
+  });
+
   //* **************************************** *//
   //         PANEL 1: DRAG AND DROP AREA        //
   //* **************************************** *//
