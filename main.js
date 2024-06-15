@@ -1,3 +1,5 @@
+// main.js (node layer)
+
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');                     // needed to query file system
