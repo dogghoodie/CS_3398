@@ -19,6 +19,7 @@ let Core = {
 //             WINDOW LAUNCH                  //
 //* **************************************** *//
 
+
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
     width: 800,
@@ -54,6 +55,7 @@ function createMainWindow() {
   });
 }
 
+
 app.whenReady().then(() => {
   createSplashWindow();
   setTimeout(() => {
@@ -63,7 +65,6 @@ app.whenReady().then(() => {
     createMainWindow();
   }, 1500); // Splash Duration Time
 });
-
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
