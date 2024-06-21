@@ -1,40 +1,45 @@
 body, html {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    width: 100%;
-  }
-  
-  #container {
-    display: flex;
-    flex-direction: row;
-    height: 100%;
-    width: 100%;
-  }
-  
-  #panel1 {
-    flex: 0 0 30%; /* 30% of the width */
-    height: 100%;  /* Full height */
-    background-color: #f1f1f1;
-    border: 2px dashed #ccc; /* Visual cue for drag and drop */
-  }
-  
-  #right-container {
-    display: flex;
-    flex-direction: column;
-    flex: 1; /* Take the remaining width (70%) */
-    height: 100%;
-  }
-  
-  #panel2 {
-    flex: 0 0 50%; /* 50% of the height of the right section */
-    width: 100%;
-    background-color: #e1e1e1;
-  }
-  
-  #panel3 {
-    flex: 0 0 50%; /* 50% of the height of the right section */
-    width: 100%;
-    background-color: #d1d1d1;
-  }
-  
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+#container {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  width: 100%;
+}
+
+#left-container {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 30%; /* 30% of the width */
+  height: 100%; /* Full height */
+}
+
+#panel1 {
+  flex: 1;
+  background-color: #f1f1f1;
+  border: 2px dashed #ccc; /* Visual cue for drag and drop */
+}
+
+#right-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* Take the remaining width (70%) */
+  height: 100%;
+}
+
+#panel2 {
+  flex: 0 0 50%; /* 50% of the height of the right section */
+  width: 100%;
+  background-color: #e1e1e1;
+}
+
+#panel3 {
+  flex: 0 0 50%; /* 50% of the height of the right section */
+  width: 100%;
+  background-color: #d1d1d1;
+}
