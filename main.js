@@ -1,6 +1,6 @@
 // main.js (node layer)
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');                     // needed to query file system
 const ffmpeg = require('fluent-ffmpeg');
@@ -57,7 +57,6 @@ function createMainWindow() {
   });
 }
 
-
 app.whenReady().then(() => {
   createSplashWindow();
   setTimeout(() => {
@@ -76,7 +75,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    createMainWindow();
   }
 });
 
@@ -115,7 +114,7 @@ function getAllFiles(dirPath, formats, arrayOfFiles) {
 
 // query-files
 // Renderer.js.Panel1 -> IPC.query-files() -> main.js.getAllFiles()
-// calls getAllFiles() function, returns an array of strings.
+// calls getAllFiles() function, returns an array of strings. 
 ipcMain.handle('query-files', async (event, dirPath, formats) => {
   try {
     const files = getAllFiles(dirPath, formats);
@@ -180,3 +179,32 @@ ipcMain.handle('concat-videos', async (event, file1, file2, output) => {
       .mergeToFile(output, './tempDir');
   });
 });
+
+ipcMain.handle('select-file', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'Videos', extensions: ['mkv', 'avi', 'mp4', 'mov'] }
+    ]
+  });
+
+  if (result.canceled){
+    return null;
+  } else {
+    return result.filePaths[0];
+  }
+
+});
+
+ipcMain.handle('select-folder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory']
+  });
+
+  if (result.canceled){
+    return null;
+  } else {
+    return result.filePaths[0];
+  }
+
+})
