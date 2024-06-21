@@ -8,7 +8,13 @@
 </head>
 <body>
   <div id="container">
-    <div id="panel1" class="panel">Panel 1: File Selection</div>
+    <div id="left-container">
+      <div id="panel1" class="panel">
+        Panel 1: File Selection
+        <button id="selectFileButton">Select File</button>
+        <button id="selectFolderButton">Select Folder</button>
+      </div>
+    </div>
     <div id="right-container">
       <div id="panel2" class="panel">Panel 2: Ordered List</div>
       <div id="panel3" class="panel">
@@ -24,43 +30,3 @@
   <script src="renderer.js"></script>
 </body>
 </html>
-
-<!---OLD DEV VERSION OF HTML-->
-<!---
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>vidCat</title>
-</head>
-<body>
-  <h1>vidCat</h1>
-  <form id="videoForm">
-    <label for="file1">Video File 1:</label>
-    <input type="text" id="file1" name="file1"><br><br>
-    <label for="file2">Video File 2:</label>
-    <input type="text" id="file2" name="file2"><br><br>
-    <label for="output">Output File:</label>
-    <input type="text" id="output" name="output"><br><br>
-    <button type="submit">Concatenate</button>
-  </form>
-  <p id="result"></p>
-  <script>
-    const form = document.getElementById('videoForm');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const file1 = document.getElementById('file1').value;
-      const file2 = document.getElementById('file2').value;
-      const output = document.getElementById('output').value;
-      try {
-        const result = await window.api.concatVideos(file1, file2, output);
-        document.getElementById('result').innerText = result;
-      } catch (error) {
-        document.getElementById('result').innerText = error;
-      }
-    });
-  </script>
-</body>
-</html>
--->
