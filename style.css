@@ -36,10 +36,53 @@ body, html {
   flex: 0 0 50%; /* 50% of the height of the right section */
   width: 100%;
   background-color: #e1e1e1;
+  padding-right: 20px; /* Add padding to the right side */
+  box-sizing: border-box; /* Include padding in width calculation */
 }
 
 #panel3 {
   flex: 0 0 50%; /* 50% of the height of the right section */
   width: 100%;
   background-color: #d1d1d1;
+  padding-right: 20px; /* Add padding to the right side */
+  box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.item-block {
+  display: flex;
+  justify-content: space-between; /* Justify content to space between */
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  width: calc(100% - 20px); /* Adjust width to allow space on the right */
+  box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.item-name {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.delete-button {
+  padding: 5px 10px;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #c0392b;
+}
+
+.list-item {
+  list-style-type: none;
+  cursor: move;
+}
+
+.dragging {
+  opacity: 0.5;
 }
