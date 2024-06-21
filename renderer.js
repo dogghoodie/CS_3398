@@ -1,10 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
-
   // BASELINE DECLARATIONS
   const panel1 = document.getElementById('panel1');
   const panel2 = document.getElementById('panel2'); 
   const panel3 = document.getElementById('panel3');
+  
+  const setOutputPathButton = document.getElementById('setOutputPathButton');
+  const outputPathInput = document.getElementById('outputPathInput');
+  
+  const selectFileButton = document.getElementById('selectFileButton');
+  const selectFolderButton = document.getElementById('selectFolderButton');
 
+  // prevents output path text box from being able to detect drag and drop for files
+  // without this, dropping a file in that text box immediately plays the video in a new window
+  outputPathInput.addEventListener('dragenter', preventDefaultBehavior);
+  outputPathInput.addEventListener('dragover', preventDefaultBehavior);
+  outputPathInput.addEventListener('dragleave', preventDefaultBehavior);
+  outputPathInput.addEventListener('drop', preventDefaultBehavior);
+  
   // Declare Core variable in the proper scope
   let Core;
 
@@ -75,8 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const files = event.dataTransfer.files; // What did they drop?
 
     if (files.length > 0) {
-      for (let i = 0; i < files.length; i++)    // iterate through multiple files dropped
-        {
+      for (let i = 0; i < files.length; i++) {
         const filePath = files[i].path;
         try {
           const stats = await window.api.getStats(filePath);
@@ -105,11 +116,46 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
           console.error('Error querying files:', error.message);
         }
-
       }
-
     }
-      
   });
 
+  selectFileButton.addEventListener('click', async () => {
+    try {
+      const file = await window.api.selectFile();
+      if (file) {
+        Core.fileList.push(file);
+        await updateCore({ fileList: Core.fileList });
+        updateOrderedList();
+      }
+    } catch (error){
+      console.error('Error selecting file:', error.message);
+    }
+  })
+
+  selectFolderButton.addEventListener('click', async () => {
+    try {
+      const folder = await window.api.selectFolder();
+      if (folder){
+        const newFiles = await window.api.queryFiles(folder, ['.mp4']);
+        newFiles.forEach(file => {
+          if (!Core.fileList.includes(file)){
+            Core.fileList.push(file);
+          }
+        });
+        await updateCore({ fileList: Core.fileList });
+        updateOrderedList();
+      }
+    } catch (error) {
+      console.error('Error selecting folder:', error.message);
+    }
+  })
+
+
+  // Prevent dragover and drop events for the output path text box
+  function preventDefaultBehavior(event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
 });
