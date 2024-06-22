@@ -97,10 +97,23 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Output path is empty');
     }
   });
+
   // PANEL 3: Handle runButton press
   runButton.addEventListener('click', async () => {
     {
-    // in progress
+    const files = core.fileList;
+
+    if (!outputPath) {
+      console.error('Output path is not set');
+      return;
+    }
+
+    try {
+      const result = await window.api.concatVideos(files, outputPath);
+      console.log(result);
+    } catch (error) {
+      console.error(error);
+    }
   });
 
   //* **************************************** *//
