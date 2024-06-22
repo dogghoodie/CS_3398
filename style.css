@@ -32,6 +32,18 @@ body, html {
   height: 100%;
 }
 
+#panel3 {
+  flex: 0 0 50%; /* 50% of the height of the right section */
+  width: 100%;
+  background-color: #d1d1d1;
+  padding-right: 20px; /* Add padding to the right side */
+  box-sizing: border-box; /* Include padding in width calculation */
+}
+
+  /* **************************************** */
+  /*         PANEL 2: ORDERED LIST            */
+  /* **************************************** */
+
 #panel2 {
   flex: 0 0 50%; /* 50% of the height of the right section */
   width: 100%;
@@ -39,14 +51,6 @@ body, html {
   padding-right: 20px; /* Add padding to the right side */
   box-sizing: border-box; /* Include padding in width calculation */
   overflow-y: auto; /* Enable vertical scrolling */
-}
-
-#panel3 {
-  flex: 0 0 50%; /* 50% of the height of the right section */
-  width: 100%;
-  background-color: #d1d1d1;
-  padding-right: 20px; /* Add padding to the right side */
-  box-sizing: border-box; /* Include padding in width calculation */
 }
 
 .item-block {

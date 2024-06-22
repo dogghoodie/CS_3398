@@ -76,9 +76,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // DROPPED FILE PATH
   panel1.addEventListener('drop', async (event) => {
-    console.log("panel 1: drop event fired");
 
+    console.log("panel 1: drop event fired");
     event.preventDefault();
+
     panel1.style.borderColor = '#ccc'; // Revert border color on drop
 
     const files = event.dataTransfer.files; // What did they drop?
@@ -117,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // SELECT FILE BUTTON
   selectFileButton.addEventListener('click', async () => {
     try {
       const file = await window.api.selectFile();
@@ -130,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 
+  // SELECT FOLDER BUTTON
   selectFolderButton.addEventListener('click', async () => {
     try {
       const folder = await window.api.selectFolder();
@@ -163,7 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const orderedList = document.getElementById('ordered_list');
     orderedList.innerHTML = ''; // Clear existing list items
   
+    // iterate through each file of Core.fileList
     Core.fileList.forEach((filePath, index) => {
+      // create a list item for each file of Core.fileList
       const li = document.createElement('li');
       li.classList.add('list-item');
       li.draggable = true;
@@ -175,17 +180,20 @@ document.addEventListener('DOMContentLoaded', () => {
       li.addEventListener('dragleave', preventDefaultBehavior);
       li.addEventListener('drop', preventDefaultBehavior);
   
+      // create an item to be added to the ordered list
       const itemDiv = document.createElement('div');
       itemDiv.classList.add('item-block');
       itemDiv.title = filePath; // Add title attribute for tooltip
-  
+      
+      // create string for item name to parse
       const itemName = document.createElement('span');
       itemName.classList.add('item-name');
-      const displayPath = filePath.replace(/^.*[\\\/]/, ''); // Get only the file name
-      const pathParts = filePath.split(/[\\\/]/);
-      const lastDir = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '';
-      itemName.textContent = `.../${lastDir}/${displayPath}`;
+      const displayPath = filePath.replace(/^.*[\\\/]/, ''); // Regex to pull filename
+      const pathParts = filePath.split(/[\\\/]/);            // Regex to split filepath into directories
+      const lastDir = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '';  // pull last directory of filepath
+      itemName.textContent = `.../${lastDir}/${displayPath}`;   // declare "...\$lastDir\$filename"
   
+      // declare delete button for item block
       const deleteButton = document.createElement('button');
       deleteButton.classList.add('delete-button');
       deleteButton.textContent = 'Delete';
@@ -193,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         removeItem(index);
       });
   
+      // add itemName and deleteButton to item block
       itemDiv.appendChild(itemName);
       itemDiv.appendChild(deleteButton);
       li.appendChild(itemDiv);
@@ -206,11 +215,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
+  // prevent default behavior for ordered list items
   function preventDefaultBehavior(event) {
     event.preventDefault();
     event.stopPropagation();
   }
   
+  //* **************************************** *//
+  //         PANEL 2: ITEM BLOCKS               //
+  //* **************************************** *//
+  
+  // declare drag scroll variable
   let dragSrcEl = null;
 
   function handleDragStart(e) {
