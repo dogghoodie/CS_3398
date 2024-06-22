@@ -218,6 +218,9 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   });
 });
 
+// select-file
+// Renderer.js.Panel1 -> IPC.select-file()
+// opens windows file select dialogue
 ipcMain.handle('select-file', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
@@ -234,6 +237,9 @@ ipcMain.handle('select-file', async () => {
 
 });
 
+// select-folder
+// Renderer.js.Panel1 -> IPC.select-folder()
+// opens windows file select dialogue
 ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory']
