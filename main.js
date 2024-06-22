@@ -173,17 +173,9 @@ ipcMain.handle('get-stats', async (event, filePath) => {
 // concat-videos
 // Renderer.js.Panel3 -> IPC.concat-videos() -> ffmpeg
 // Calls ffmpeg concat execution
+
 ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   return new Promise((resolve, reject) => {
-    // concatenation of 2 files
-    //ffmpeg()
-      //.input(file1)
-      //.input(file2)
-      //.on('end', () => resolve('Video concatenation completed'))
-      //.on('error', (err) => reject(`Error: ${err.message}`))
-      //.mergeToFile(output, './tempDir');
-
-    // concatenation of multiple files
     console.log('Files:', files);
     console.log('Output Path:', outputPath);
 
@@ -201,23 +193,50 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
       }
     });
 
-    if(!fs.existsSync('./tempDir')) {
-      fs.mkdirSync('./tempDir')
+    if (!fs.existsSync('./tempDir')) {
+      fs.mkdirSync('./tempDir');
     }
 
-    const command = ffmpeg();
+    const encodedFiles = files.map((file, index) => path.join('./tempDir', `encoded${index}.mp4`));
 
-    files.forEach(file => {
-      command.input(file);
-    });
+    // Re-encode all files to the same format and resolution
+    const encodeFile = (file, index) => {
+      return new Promise((resolve, reject) => {
+        ffmpeg(file)
+          .outputOptions([
+            '-c:v libx264',
+            '-c:a aac',
+            '-b:a 192k',
+            '-s 1280x720' // Adjust resolution as needed
+          ])
+          .on('end', () => resolve(encodedFiles[index]))
+          .on('error', (err) => reject(`Error encoding ${file}: ${err.message}`))
+          .save(encodedFiles[index]);
+      });
+    };
 
-    command
-      .on('end', () => resolve('vidCat Complete!'))
-      .on('error', (err) => reject(`Error: ${err.message}`))
-      .mergeToFile(outputPath, './tempDir')
+    // Encode all files sequentially
+    Promise.all(files.map((file, index) => encodeFile(file, index)))
+      .then(() => {
+        const command = ffmpeg();
+
+        encodedFiles.forEach(file => {
+          command.input(file);
+        });
+
+        // Create the filter_complex string for concatenation
+        const filterComplex = encodedFiles.map((_, index) => `[${index}:v][${index}:a]`).join('') + `concat=n=${encodedFiles.length}:v=1:a=1[outv][outa]`;
+
+        command
+          .complexFilter(filterComplex)
+          .outputOptions('-map', '[outv]', '-map', '[outa]')
+          .on('end', () => resolve('vidCat Complete!'))
+          .on('error', (err) => reject(`Error: ${err.message}`))
+          .save(outputPath);
+      })
+      .catch(err => reject(err));
   });
 });
-
 // select-file
 // Renderer.js.Panel1 -> IPC.select-file()
 // opens windows file select dialogue
