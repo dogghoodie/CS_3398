@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const setOutputPathButton = document.getElementById('setOutputPathButton');
   const outputPathInput = document.getElementById('outputPathInput');
-  const runButton = documenbt.getElementById('runButton');
+  const runButton = document.getElementById('runButton');
   const selectFileButton = document.getElementById('selectFileButton');
   const selectFolderButton = document.getElementById('selectFolderButton');
 
@@ -58,8 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   // PANEL 3: Handle runButton press
   runButton.addEventListener('click', async () => {
-    {
-    // in progress
+
   });
 
   //* **************************************** *//
