@@ -172,12 +172,25 @@ ipcMain.handle('get-stats', async (event, filePath) => {
 // Calls ffmpeg concat execution
 ipcMain.handle('concat-videos', async (event, file1, file2, output) => {
   return new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(file1)
-      .input(file2)
-      .on('end', () => resolve('Video concatenation completed'))
-      .on('error', (err) => reject(`Error: ${err.message}`))
-      .mergeToFile(output, './tempDir');
+    // concatenation of 2 files
+    //ffmpeg()
+      //.input(file1)
+      //.input(file2)
+      //.on('end', () => resolve('Video concatenation completed'))
+      //.on('error', (err) => reject(`Error: ${err.message}`))
+      //.mergeToFile(output, './tempDir');
+
+    // concatenation of multiple files
+    const command = ffmpeg();
+
+    files.forEach(file => {
+      command.input(file);
+    });
+
+    command
+      .on('end', () => resolve('vidCat Complete!'))
+      .on('error', (err) => reject('Error: #{err.message}'))
+      .mergeToFile(outputPath)
   });
 });
 
