@@ -38,6 +38,7 @@ body, html {
   background-color: #e1e1e1;
   padding-right: 20px; /* Add padding to the right side */
   box-sizing: border-box; /* Include padding in width calculation */
+  overflow-y: auto; /* Enable vertical scrolling */
 }
 
 #panel3 {
@@ -52,8 +53,8 @@ body, html {
   display: flex;
   justify-content: space-between; /* Justify content to space between */
   border: 1px solid #ccc;
-  padding: 10px;
-  margin: 10px 0;
+  padding: 5px; /* Reduce padding */
+  margin: 5px 0; /* Reduce margin */
   border-radius: 5px;
   background-color: #f9f9f9;
   width: calc(100% - 20px); /* Adjust width to allow space on the right */
@@ -62,7 +63,6 @@ body, html {
 
 .item-name {
   font-weight: bold;
-  margin-bottom: 10px;
 }
 
 .delete-button {

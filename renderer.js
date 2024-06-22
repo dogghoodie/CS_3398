@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   outputPathInput.addEventListener('dragover', preventDefaultBehavior);
   outputPathInput.addEventListener('dragleave', preventDefaultBehavior);
   outputPathInput.addEventListener('drop', preventDefaultBehavior);
-  
+
   // Declare Core variable in the proper scope
   let Core;
 
@@ -38,47 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
     Core = { ...Core, ...newData };
     await window.api.setCore(Core);
     console.log('Updated Core in Renderer.js:', Core); 
-  }
-
-  // PANEL 2: Update HTML element with fileList
-  function updateOrderedList() {
-    const orderedList = document.getElementById('ordered_list');
-    orderedList.innerHTML = ''; // Clear existing list items
-  
-    Core.fileList.forEach((filePath, index) => {
-      const li = document.createElement('li');
-      li.classList.add('list-item');
-      li.draggable = true;
-      li.dataset.index = index;
-  
-      const itemDiv = document.createElement('div');
-      itemDiv.classList.add('item-block');
-  
-      const itemName = document.createElement('span');
-      itemName.classList.add('item-name');
-      const displayPath = filePath.replace(/^.*[\\\/]/, ''); // Get only the file name
-      const pathParts = filePath.split(/[\\\/]/);
-      const lastDir = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '';
-      itemName.textContent = `.../${lastDir}/${displayPath}`;
-  
-      const deleteButton = document.createElement('button');
-      deleteButton.classList.add('delete-button');
-      deleteButton.textContent = 'Delete';
-      deleteButton.addEventListener('click', () => {
-        removeItem(index);
-      });
-  
-      itemDiv.appendChild(itemName);
-      itemDiv.appendChild(deleteButton);
-      li.appendChild(itemDiv);
-      orderedList.appendChild(li);
-  
-      // Add drag and drop event listeners
-      li.addEventListener('dragstart', handleDragStart);
-      li.addEventListener('dragover', handleDragOver);
-      li.addEventListener('drop', handleDrop);
-      li.addEventListener('dragend', handleDragEnd);
-    });
   }
 
   function removeItem(index) {
@@ -150,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           await updateCore({ fileList: Core.fileList });
-          updateOrderedList();
+          updateOrderedList();    // update Panel 2
         } catch (error) {
           console.error('Error querying files:', error.message);
         }
@@ -199,6 +158,59 @@ document.addEventListener('DOMContentLoaded', () => {
   //         PANEL 2: ORDERED LIST              //
   //* **************************************** *//
 
+  // PANEL 2: Update HTML element with fileList
+  function updateOrderedList() {
+    const orderedList = document.getElementById('ordered_list');
+    orderedList.innerHTML = ''; // Clear existing list items
+  
+    Core.fileList.forEach((filePath, index) => {
+      const li = document.createElement('li');
+      li.classList.add('list-item');
+      li.draggable = true;
+      li.dataset.index = index;
+
+      // Prevent default behavior for drag events on li elements
+      li.addEventListener('dragenter', preventDefaultBehavior);
+      li.addEventListener('dragover', preventDefaultBehavior);
+      li.addEventListener('dragleave', preventDefaultBehavior);
+      li.addEventListener('drop', preventDefaultBehavior);
+  
+      const itemDiv = document.createElement('div');
+      itemDiv.classList.add('item-block');
+      itemDiv.title = filePath; // Add title attribute for tooltip
+  
+      const itemName = document.createElement('span');
+      itemName.classList.add('item-name');
+      const displayPath = filePath.replace(/^.*[\\\/]/, ''); // Get only the file name
+      const pathParts = filePath.split(/[\\\/]/);
+      const lastDir = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '';
+      itemName.textContent = `.../${lastDir}/${displayPath}`;
+  
+      const deleteButton = document.createElement('button');
+      deleteButton.classList.add('delete-button');
+      deleteButton.textContent = 'Delete';
+      deleteButton.addEventListener('click', () => {
+        removeItem(index);
+      });
+  
+      itemDiv.appendChild(itemName);
+      itemDiv.appendChild(deleteButton);
+      li.appendChild(itemDiv);
+      orderedList.appendChild(li);
+  
+      // Add drag and drop event listeners to li elements
+      li.addEventListener('dragstart', handleDragStart);
+      li.addEventListener('dragover', handleDragOver);
+      li.addEventListener('drop', handleDrop);
+      li.addEventListener('dragend', handleDragEnd);
+    });
+  }
+  
+  function preventDefaultBehavior(event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
   let dragSrcEl = null;
 
   function handleDragStart(e) {
@@ -207,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
     e.dataTransfer.setData('text/html', this.innerHTML);
     this.classList.add('dragging');
   }
-  
+
   function handleDragOver(e) {
     if (e.preventDefault) {
       e.preventDefault(); // Necessary. Allows us to drop.
@@ -215,48 +227,40 @@ document.addEventListener('DOMContentLoaded', () => {
     e.dataTransfer.dropEffect = 'move';  // See the section on the DataTransfer object.
     return false;
   }
-  
+
+  function handleDrop(e) {
+    if (e.stopPropagation) {
+      e.stopPropagation(); // Stops some browsers from redirecting.
+    }
+
+    // Don't do anything if dropping the same column we're dragging.
+    if (dragSrcEl !== this) {
+      const dragSrcIndex = parseInt(dragSrcEl.dataset.index);
+      const dropTargetIndex = parseInt(this.dataset.index);
+
+      // Swap the items in Core.fileList
+      const temp = Core.fileList[dragSrcIndex];
+      Core.fileList[dragSrcIndex] = Core.fileList[dropTargetIndex];
+      Core.fileList[dropTargetIndex] = temp;
+
+      // Update the data-index attributes
+      const allItems = document.querySelectorAll('#ordered_list .list-item');
+      allItems.forEach((item, index) => {
+        item.dataset.index = index;
+      });
+
+      // Re-render the ordered list
+      updateCore({ fileList: Core.fileList }).then(() => {
+        updateOrderedList();
+      });
+    }
+    return false;
+  }
+
   function handleDragEnd() {
     this.classList.remove('dragging');
     document.querySelectorAll('#ordered_list .list-item').forEach(item => {
       item.classList.remove('dragging');
     });
   }
-
-
-  function handleDrop(e) {
-    if (e.stopPropagation) {
-      e.stopPropagation(); // Stops some browsers from redirecting.
-    }
-  
-    // Don't do anything if dropping the same column we're dragging.
-    if (dragSrcEl !== this) {
-      // Swap the HTML content of the dragged and dropped elements
-      dragSrcEl.innerHTML = this.innerHTML;
-      this.innerHTML = e.dataTransfer.getData('text/html');
-  
-      // Update Core.fileList based on the new order of elements
-      const newFileList = [];
-      document.querySelectorAll('#ordered_list .list-item').forEach((item, index) => {
-        const itemName = item.querySelector('.item-name');
-        const filePath = itemName.textContent.split('/').pop(); // Extract file name
-        const lastDir = itemName.textContent.split('/')[1]; // Extract last directory
-        const fullPath = `${lastDir}/${filePath}`; // Reconstruct the path
-        newFileList.push(fullPath);
-  
-        // Update the display path
-        itemName.textContent = `.../${lastDir}/${filePath}`;
-  
-        // Update the delete button event listener for the new order
-        const deleteButton = item.querySelector('.delete-button');
-        deleteButton.removeEventListener('click', () => removeItem(index));
-        deleteButton.addEventListener('click', () => removeItem(index));
-      });
-  
-      Core.fileList = newFileList;
-      updateCore({ fileList: Core.fileList });
-    }
-    return false;
-  }
-  
 });
