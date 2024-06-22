@@ -6,7 +6,10 @@ const path = require('path');
 const fs = require('fs');                     // needed to query file system
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
+const ffprobePath = require('ffprobe-static').path;
+
 ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 //* **************************************** *//
 //                   CORE                     //
@@ -170,7 +173,7 @@ ipcMain.handle('get-stats', async (event, filePath) => {
 // concat-videos
 // Renderer.js.Panel3 -> IPC.concat-videos() -> ffmpeg
 // Calls ffmpeg concat execution
-ipcMain.handle('concat-videos', async (event, file1, file2, output) => {
+ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   return new Promise((resolve, reject) => {
     // concatenation of 2 files
     //ffmpeg()
@@ -181,6 +184,27 @@ ipcMain.handle('concat-videos', async (event, file1, file2, output) => {
       //.mergeToFile(output, './tempDir');
 
     // concatenation of multiple files
+    console.log('Files:', files);
+    console.log('Output Path:', outputPath);
+
+    if (!Array.isArray(files) || files.length === 0) {
+      return reject('No files provided');
+    }
+
+    if (typeof outputPath !== 'string' || outputPath.trim() === '') {
+      return reject(new Error('Invalid output path'));
+    }
+
+    files.forEach(file => {
+      if (typeof file !== 'string' || file.trim() === '') {
+        return reject(new Error('Invalid file path'));
+      }
+    });
+
+    if(!fs.existsSync('./tempDir')) {
+      fs.mkdirSync('./tempDir')
+    }
+
     const command = ffmpeg();
 
     files.forEach(file => {
@@ -189,8 +213,8 @@ ipcMain.handle('concat-videos', async (event, file1, file2, output) => {
 
     command
       .on('end', () => resolve('vidCat Complete!'))
-      .on('error', (err) => reject('Error: #{err.message}'))
-      .mergeToFile(outputPath)
+      .on('error', (err) => reject(`Error: ${err.message}`))
+      .mergeToFile(outputPath, './tempDir')
   });
 });
 
