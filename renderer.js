@@ -100,7 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // PANEL 3: Handle runButton press
   runButton.addEventListener('click', async () => {
-    {
     const files = core.fileList;
 
     if (!outputPath) {
