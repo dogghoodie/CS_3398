@@ -1,9 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-  concatVideos: (file1, file2, output) => ipcRenderer.invoke('concat-videos', file1, file2, output),
+  concatVideos: (files, outputPath) => ipcRenderer.invoke('concat-videos', files, outputPath),
   queryFiles: (dirPath, formats) => ipcRenderer.invoke('query-files', dirPath, formats),
   getCore: () => ipcRenderer.invoke('get-core'),
   setCore: (newCore) => ipcRenderer.invoke('set-core', newCore),
-  getStats: (filePath) => ipcRenderer.invoke('get-stats', filePath)
+  getStats: (filePath) => ipcRenderer.invoke('get-stats', filePath),
+  selectFile: () => ipcRenderer.invoke('select-file'),
+  selectFolder: () => ipcRenderer.invoke('select-folder')
 });

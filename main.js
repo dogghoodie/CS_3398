@@ -1,11 +1,15 @@
 // main.js (node layer)
+// test
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');                     // needed to query file system
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
+const ffprobePath = require('ffprobe-static').path;
+
 ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 //* **************************************** *//
 //                   CORE                     //
@@ -57,7 +61,6 @@ function createMainWindow() {
   });
 }
 
-
 app.whenReady().then(() => {
   createSplashWindow();
   setTimeout(() => {
@@ -76,7 +79,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    createMainWindow();
   }
 });
 
@@ -115,7 +118,7 @@ function getAllFiles(dirPath, formats, arrayOfFiles) {
 
 // query-files
 // Renderer.js.Panel1 -> IPC.query-files() -> main.js.getAllFiles()
-// calls getAllFiles() function, returns an array of strings.
+// calls getAllFiles() function, returns an array of strings. 
 ipcMain.handle('query-files', async (event, dirPath, formats) => {
   try {
     const files = getAllFiles(dirPath, formats);
@@ -170,13 +173,82 @@ ipcMain.handle('get-stats', async (event, filePath) => {
 // concat-videos
 // Renderer.js.Panel3 -> IPC.concat-videos() -> ffmpeg
 // Calls ffmpeg concat execution
-ipcMain.handle('concat-videos', async (event, file1, file2, output) => {
+ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   return new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(file1)
-      .input(file2)
-      .on('end', () => resolve('Video concatenation completed'))
+    // concatenation of 2 files
+    //ffmpeg()
+      //.input(file1)
+      //.input(file2)
+      //.on('end', () => resolve('Video concatenation completed'))
+      //.on('error', (err) => reject(`Error: ${err.message}`))
+      //.mergeToFile(output, './tempDir');
+
+    // concatenation of multiple files
+    console.log('Files:', files);
+    console.log('Output Path:', outputPath);
+
+    if (!Array.isArray(files) || files.length === 0) {
+      return reject('No files provided');
+    }
+
+    if (typeof outputPath !== 'string' || outputPath.trim() === '') {
+      return reject(new Error('Invalid output path'));
+    }
+
+    files.forEach(file => {
+      if (typeof file !== 'string' || file.trim() === '') {
+        return reject(new Error('Invalid file path'));
+      }
+    });
+
+    if(!fs.existsSync('./tempDir')) {
+      fs.mkdirSync('./tempDir')
+    }
+
+    const command = ffmpeg();
+
+    files.forEach(file => {
+      command.input(file);
+    });
+
+    command
+      .on('end', () => resolve('vidCat Complete!'))
       .on('error', (err) => reject(`Error: ${err.message}`))
-      .mergeToFile(output, './tempDir');
+      .mergeToFile(outputPath, './tempDir')
   });
 });
+
+// select-file
+// Renderer.js.Panel1 -> IPC.select-file()
+// opens windows file select dialogue
+ipcMain.handle('select-file', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'Videos', extensions: ['mkv', 'avi', 'mp4', 'mov'] }
+    ]
+  });
+
+  if (result.canceled){
+    return null;
+  } else {
+    return result.filePaths[0];
+  }
+
+});
+
+// select-folder
+// Renderer.js.Panel1 -> IPC.select-folder()
+// opens windows file select dialogue
+ipcMain.handle('select-folder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory']
+  });
+
+  if (result.canceled){
+    return null;
+  } else {
+    return result.filePaths[0];
+  }
+
+})
