@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('api', {
   setCore: (newCore) => ipcRenderer.invoke('set-core', newCore),
   getStats: (filePath) => ipcRenderer.invoke('get-stats', filePath),
   selectFile: () => ipcRenderer.invoke('select-file'),
-  selectFolder: () => ipcRenderer.invoke('select-folder')
+  selectFolder: () => ipcRenderer.invoke('select-folder'),
+  cancelConcat: () => ipcRenderer.invoke('cancel-concat') // Add cancelConcat function
 });

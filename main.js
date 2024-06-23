@@ -18,7 +18,9 @@ let Core = {
   state: "idle",
   fileList: [],
   outputPath: "",
-  percentage: 0
+  percentage: 0,
+  ffmpegProcess: null // Store the ffmpeg process here
+
 };
 
 //* **************************************** *//
@@ -233,9 +235,19 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           .on('end', () => resolve('vidCat Complete!'))
           .on('error', (err) => reject(`Error: ${err.message}`))
           .save(outputPath);
-      })
-      .catch(err => reject(err));
-  });
+     // Store the ffmpeg process for later cancellation
+     Core.ffmpegProcess = command;
+
+     // Listen for SIGINT signal to cancel the ffmpeg process
+     process.on('SIGINT', () => {
+       if (Core.ffmpegProcess) {
+         Core.ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
+         Core.ffmpegProcess = null; // Clear the ffmpeg process
+       }
+     });
+   })
+   .catch(err => reject(err));
+ });
 });
 // select-file
 // Renderer.js.Panel1 -> IPC.select-file()
@@ -271,3 +283,14 @@ ipcMain.handle('select-folder', async () => {
   }
 
 })
+
+// Cancel video concatenation
+ipcMain.handle('cancel-concat', async () => {
+  if (ffmpegProcess) {
+    ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
+    ffmpegProcess = null; // Clear the ffmpeg process
+    return 'FFmpeg process cancelled';
+  } else {
+    throw new Error('No active FFmpeg process to cancel');
+  }
+});
