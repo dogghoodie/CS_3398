@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const outputPath = Core.outputPath;
 
     console.log('Files: ${JSON.stringify(files)}');
-    console.log('Output path: #{outputPath}');
+    console.log('Output path: ${outputPath}');
 
     if (!outputPath) {
       console.error('Output path is not set');
