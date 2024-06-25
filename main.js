@@ -215,11 +215,9 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           ])
           .on('progress', progress => {
             if (progress.percent !== undefined) {
-              if(encodeProgress[index] < (progress.percent)){
-              encodeProgress[index] = { percent: progress.percent }; // Update encode progress for each file
-              }
+              encodeProgress[index] = { percent: (progress.percent).toFixed(2) }; // Update encode progress for each file
+              console.log(encodeProgress)
             }
-            console.log(encodeProgress)
           })
           .on('end', () => resolve(encodedFiles[index]))
           .on('error', (err) => reject(`Error encoding ${file}: ${err.message}`))
@@ -244,11 +242,9 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           .outputOptions('-map', '[outv]', '-map', '[outa]')
           .on('progress', progress => {
             if (progress.percent !== undefined) {
-              if(concatProgress < (progress.percent)){
-                concatProgress = { percent: progress.percent / encodedFiles.length }; // Update concat progress
-              }
+                concatProgress = { percent: (progress.percent / encodedFiles.length).toFixed(2) }; // Update concat progress
+              console.log(concatProgress)
             }
-            console.log(encodeProgress)
           })
           .on('end', () => resolve('vidCat Complete!'))
           .on('error', (err) => reject(`Error: ${err.message}`))
