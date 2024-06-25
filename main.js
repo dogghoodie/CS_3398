@@ -21,8 +21,7 @@ let Core = {
   outputPath: "",
   percentage: 0,
   ffencodeProcess: null, // Store the ffmpeg encode here
-  ffmpegProcess: null // Store the ffmpeg concat process here
-
+  encodingProcesses: [],
 };
 
 //* **************************************** *//
@@ -129,6 +128,35 @@ function resolveHome(filepath) {
   return filepath;
 }
 
+// clean up tempDir
+async function deleteFileWithRetry(filePath, retries = 5, delay = 500) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log("tempDirCleanup: attempting delete of: ", filePath);
+      fs.unlinkSync(filePath);
+      return;
+    } catch (err) {
+      if (err.code === 'EBUSY' && i < retries - 1) {
+        console.warn(`File ${filePath} is busy, retrying in ${delay}ms...`);
+        await sleep(delay);
+      } else {
+        console.error(`Error deleting file ${filePath}: ${err.message}`);
+        return;
+      }
+    }
+  }
+}
+
+async function cleanUpTempDir() {
+  const tempDir = path.resolve('./tempDir');
+  if (fs.existsSync(tempDir)) {
+    const files = fs.readdirSync(tempDir);
+    for (const file of files) {
+      const filePath = path.join(tempDir, file);
+      await deleteFileWithRetry(filePath);
+    }
+  }
+}
 
 //* **************************************** *//
 //                IPC ROUTES                  //
@@ -197,11 +225,11 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   let encodeProgress = {}; // Object to store encoding progress
   let concatProgress = {}; // Object to store concatenation progress
 
-  // handle ambiguous filepath
+  // Handle ambiguous filepath
   Core.outputPath = resolveHome(Core.outputPath);
   outputPath = Core.outputPath;
-  console.log("disambiguated outputPath: ", Core.outputPath);
-  
+  console.log("Disambiguated outputPath:", Core.outputPath);
+
   return new Promise((resolve, reject) => {
     console.log('Files:', files);
     console.log('Output Path:', outputPath);
@@ -228,9 +256,9 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
     
     // Re-encode all files to the same format and resolution
     const encodeFile = (file, index) => {
-      console.log("ffmpeg call. core status: ", Core.state);
+      console.log("ffmpeg call. core status:", Core.state);
       return new Promise((resolve, reject) => {
-        ffmpeg(file)
+        const process = ffmpeg(file)
           .outputOptions([
             '-c:v libx264',
             '-c:a aac',
@@ -240,18 +268,24 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           .on('progress', progress => {
             if (progress.percent !== undefined) {
               encodeProgress[index] = { percent: (progress.percent).toFixed(2) };
-              console.log(encodeProgress)
+              console.log(encodeProgress);
             }
           })
           .on('end', () => {
             console.log(`Encoding complete for file: ${file}`);
+            Core.encodingProcesses[index] = null;
             resolve(encodedFiles[index]);
           })
           .on('error', (err) => {
             console.error(`Error encoding ${file}: ${err.message}`);
+            Core.encodingProcesses[index] = null;
             reject(`Error encoding ${file}: ${err.message}`);
           })
           .save(encodedFiles[index]);
+
+        // Store the ffmpeg process for later cancellation
+        Core.ffmpegProcess = process;
+        Core.encodingProcesses[index] = process;
       });
     };
 
@@ -272,35 +306,60 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           .outputOptions('-map', '[outv]', '-map', '[outa]')
           .on('progress', progress => {
             if (progress.percent !== undefined) {
-                concatProgress = { percent: (progress.percent / encodedFiles.length).toFixed(2) }; // Update concat progress
-              console.log(concatProgress)
+              concatProgress = { percent: (progress.percent / encodedFiles.length).toFixed(2) }; // Update concat progress
+              console.log(concatProgress);
             }
           })
           .on('end', () => {
             console.log(`Concatenation complete for file`);
             resolve('vidCat Complete!');
           })
-
           .on('error', (err) => {
             console.log(`Concatenation error for file`);
-            reject(`Error: ${err.message}`)
+            reject(`Error: ${err.message}`);
           })
           .save(outputPath);
-     // Store the ffmpeg process for later cancellation
-     Core.ffmpegProcess = command;
-     console.log("Core.ffmpegProcess: ", Core.ffmpegProcess);
 
-     // Listen for SIGINT signal to cancel the ffmpeg process
-     process.on('SIGINT', () => {
-       if (Core.ffmpegProcess) {
-         Core.ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
-         Core.ffmpegProcess = null; // Clear the ffmpeg process
-       }
-     });
-   })
-   .catch(err => reject(err));
- });
+        // Store the ffmpeg process for later cancellation
+        Core.ffmpegProcess = command;
+        console.log("Core.ffmpegProcess:", Core.ffmpegProcess);
+
+        // Listen for SIGINT signal to cancel the ffmpeg process
+        process.on('SIGINT', () => {
+          if (Core.ffmpegProcess) {
+            Core.ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
+            Core.ffmpegProcess = null; // Clear the ffmpeg process
+          }
+        });
+      })
+      .catch(err => reject(err));
+  });
 });
+
+// Cancel video concatenation
+ipcMain.handle('cancel-concat', async () => {
+  console.log("cancel-concat called");
+  Core.state = "idle";
+
+  // Cancel all encoding processes
+  Core.encodingProcesses.forEach(process => {
+    if (process) {
+      process.kill('SIGINT');
+    }
+  });
+  Core.encodingProcesses = [];
+
+  // Cancel concatenation process
+  if (Core.ffmpegProcess) {
+    Core.ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
+    Core.ffmpegProcess = null; // Clear the ffmpeg process
+  }
+
+  cleanUpTempDir();
+  console.log("cancellation complete.");
+  return 'FFmpeg process cancelled';
+});
+
 // select-file
 // Renderer.js.Panel1 -> IPC.select-file()
 // opens windows file select dialogue
@@ -335,19 +394,3 @@ ipcMain.handle('select-folder', async () => {
   }
 
 })
-
-// Cancel video concatenation
-ipcMain.handle('cancel-concat', async () => {
-  console.log("cancel-concat called");
-  while (Core.state == "running" && Core.ffmpegProcess == null)
-  {
-    await sleep(1);
-  }
-  if (Core.ffmpegProcess) {
-    await Core.ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
-    Core.ffmpegProcess = null; // Clear the ffmpeg process
-    return 'FFmpeg process cancelled';
-  } else {
-    throw new Error('No active FFmpeg process to cancel');
-  }
-});

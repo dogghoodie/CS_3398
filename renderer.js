@@ -65,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // PANEL 3: Handle output path button event
- 
   setOutputPathButton.addEventListener('click', async () => {
     const outputPath = outputPathInput.value;
     if (outputPath) {
@@ -132,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       console.log('Cancel button pressed while not "running"');
     }
+    Core = await window.api.getCore();
   });
 
   //* **************************************** *//
