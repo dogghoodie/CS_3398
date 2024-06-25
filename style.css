@@ -33,6 +33,8 @@ body, html {
 }
 
 #panel3 {
+  display: flex;
+  flex-direction: column;
   flex: 0 0 50%; /* 50% of the height of the right section */
   width: 100%;
   background-color: #d1d1d1;
@@ -40,9 +42,42 @@ body, html {
   box-sizing: border-box; /* Include padding in width calculation */
 }
 
-  /* **************************************** */
-  /*         PANEL 2: ORDERED LIST            */
-  /* **************************************** */
+.output-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.output-path-section {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px; /* Space between elements */
+  padding: 10px; /* Add padding for spacing */
+  box-sizing: border-box; /* Include padding in width calculation */
+  width: 100%;
+}
+
+.output-path-section input {
+  flex: 1;
+}
+
+#panel3 .row {
+  flex: 1;
+  display: flex;
+  align-items: center; /* Center items vertically */
+  justify-content: space-around; /* Distribute items evenly */
+  padding: 10px; /* Add padding for spacing */
+  box-sizing: border-box; /* Include padding in width calculation */
+}
+
+#panel3 .row:nth-child(2) {
+  justify-content: space-evenly; /* Distribute buttons evenly */
+}
+
+#panel3 .row:nth-child(3) {
+  justify-content: flex-start; /* Align items to the left */
+}
 
 #panel2 {
   flex: 0 0 50%; /* 50% of the height of the right section */

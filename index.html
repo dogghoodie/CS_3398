@@ -21,13 +21,24 @@
         <ol id="ordered_list"></ol>
       </div>
       <div id="panel3" class="panel">
-        Panel 3: Execution
-        <div>
-          <label for="outputPathInput">Output Path:</label>
-          <input type="text" id="outputPathInput" />
-          <button id="setOutputPathButton">Set Output Path</button>
+        <div class="output-container">
+          <div class="output-path-section">
+            <label for="fileNameInput">File Name:</label>
+            <input type="text" id="fileNameInput" />
+          </div>
+          <div class="output-path-section">
+            <label for="locationInput">Location:</label>
+            <input type="text" id="locationInput" />
+            <button id="browseButton">Browse</button>
+          </div>
+        </div>
+        <div class="row">
           <button id="runButton">vidCat!</button>
           <button id="cancelButton">Cancel</button>
+        </div>
+        <div class="row">
+          <label for="progressBar">Progress:</label>
+          <progress id="progressBar" value="0" max="100"></progress>
         </div>
       </div>
     </div>

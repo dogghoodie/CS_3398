@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const panel2 = document.getElementById('panel2'); 
   const panel3 = document.getElementById('panel3');
   
-  const setOutputPathButton = document.getElementById('setOutputPathButton');
-  const outputPathInput = document.getElementById('outputPathInput');
+  const fileNameInput = document.getElementById('fileNameInput');
+  const locationInput = document.getElementById('locationInput');
   const runButton = document.getElementById('runButton');
   const selectFileButton = document.getElementById('selectFileButton');
   const selectFolderButton = document.getElementById('selectFolderButton');
@@ -13,10 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // prevents output path text box from being able to detect drag and drop for files
   // without this, dropping a file in that text box immediately plays the video in a new window
+  /*
   outputPathInput.addEventListener('dragenter', preventDefaultBehavior);
   outputPathInput.addEventListener('dragover', preventDefaultBehavior);
   outputPathInput.addEventListener('dragleave', preventDefaultBehavior);
   outputPathInput.addEventListener('drop', preventDefaultBehavior);
+  */
 
   // start by using $dateTime as default output value for .mp4
   function getCurrentDateTime() {
@@ -30,8 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${year}${month}${day}_${hours}${minutes}${seconds}`;
   }
 
-  const defaultOutputPath = `/output/${getCurrentDateTime()}.mp4`;
-  outputPathInput.value = defaultOutputPath;
+  // set output defaults
+  locationInput.value = `/output`;
+  fileNameInput.value = `${getCurrentDateTime()}.mp4`;
+  defaultOutputPath = locationInput.value + fileNameInput.value;
 
   // Declare Core variable in the proper scope
   let Core;
@@ -65,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // PANEL 3: Handle output path button event
+  /*
   setOutputPathButton.addEventListener('click', async () => {
     const outputPath = outputPathInput.value;
     if (outputPath) {
@@ -74,7 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Output path is empty');
     }
   });
+  */
 
+  /*
   outputPathInput.addEventListener('keydown', async (event) => {
     if (event.key === 'Enter') {
       const outputPath = outputPathInput.value;
@@ -86,12 +93,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+  */
 
   // PANEL 3: Handle runButton press
   runButton.addEventListener('click', async () => {
     if (Core.state != "running") {
       const files = Core.fileList;
-      const outputPath = Core.outputPath;
+      const outputPath = locationInput.value + fileNameInput.value;
+      Core.outputPath = outputPath;
   
       console.log('Files: ${JSON.stringify(files)}');
       console.log('Output path: ${outputPath}');
