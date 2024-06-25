@@ -369,7 +369,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
 // Cancel video concatenation
 ipcMain.handle('cancel-concat', async () => {
   console.log("cancel-concat called");
-  Core.state = "idle";
+  Core.state = "cancelled";
 
   // Cancel all encoding processes
   Core.encodingProcesses.forEach(process => {
@@ -377,7 +377,6 @@ ipcMain.handle('cancel-concat', async () => {
       process.kill('SIGINT');
     }
   });
-  Core.encodingProcesses = [];
 
   // Cancel concatenation process
   if (Core.ffmpegProcess) {
@@ -385,8 +384,11 @@ ipcMain.handle('cancel-concat', async () => {
     Core.ffmpegProcess = null; // Clear the ffmpeg process
   }
 
+  sleep(1000);
+  Core.encodingProcesses = [];
+  Core.percentageEncode = 0;
+  Core.percentageConcat = 0;
   cleanUpTempDir();
-  console.log("cancellation complete.");
   return 'FFmpeg process cancelled';
 });
 
@@ -425,3 +427,8 @@ ipcMain.handle('select-folder', async () => {
 
 })
 
+// print core
+// Renderer.js.Panel3.DebugButton -> IPC.print-core() -> output to console
+ipcMain.handle('print-core', async() => {
+  console.log("main core: ", Core);
+})

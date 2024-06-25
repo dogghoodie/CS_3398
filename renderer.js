@@ -7,9 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileNameInput = document.getElementById('fileNameInput');
   const locationInput = document.getElementById('locationInput');
   const runButton = document.getElementById('runButton');
+  const cancelButton = document.getElementById('cancelButton');
+  const debugButton = document.getElementById('debugButton');
   const selectFileButton = document.getElementById('selectFileButton');
   const selectFolderButton = document.getElementById('selectFolderButton');
-  const cancelButton = document.getElementById('cancelButton'); // Add cancel button
   const progressBar = document.getElementById('progressBar');
   const stateLabel = document.getElementById('stateLabel');
   const progressLabel = document.getElementById('progressLabel');
@@ -75,16 +76,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function progressLoop() {
     console.log("Progress Loop started.");
-    while (Core.state !== "idle") {
+    while (Core.state !== "idle" && Core.state !== "cancelled") {
       // Update Core state and percentages
       Core.state = await window.api.getCoreState();
       const percentages = await window.api.getCorePercents();
-      // console.log("percentages: ", percentages);
 
       Core.percentageEncode = percentages.percentageEncode;
       Core.percentageConcat = percentages.percentageConcat;
-
-      console.log("Progress Loop Core State: ", Core.state);
 
       // update state label
       if (Core.state == "running-encode") {
@@ -120,7 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset progress bar when Core state is idle
     if (stateLabel.textContent == "complete") {
       progressBar.value = 100;
+    } else if (stateLabel.textContent == "cancelled") {
+      progressBar.value = 0;
     }
+
+    console.log("Exiting progress loop");
     
   }
 
@@ -157,10 +159,15 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (error) {
         console.error(error);
       }
-
-      stateLabel.textContent = "complete";
-      progressLabel.textContent = "100%";
-  
+      if (Core.state == "idle") {
+        stateLabel.textContent = "complete";
+        progressLabel.textContent = "100%";
+      } else if (Core.state == "cancelled") {
+        stateLabel.textContent = "cancelled";
+        progressLabel.textContent = "0%";
+        Core.state = "idle";
+        await updateCore({ state: Core.state});
+      }
     } else {
       alert("vidCat already running!");
     }
@@ -175,8 +182,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const cancel = await window.api.cancelConcat();
         if (cancel) {
           console.log('Cancellation success!');
-          Core.state = "idle";
+          Core.state = "cancelled";
           await updateCore({ state: Core.state});
+          stateLabel.textContent = "cancelled"
+          progressLabel.textContent = "0%";
           // Additional logic if needed on successful cancellation
         } else {
           console.error('Cancel failed!');
@@ -187,9 +196,15 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       console.log('Cancel button pressed while not "running"');
     }
-    Core.state = await window.api.getCoreState();
-    console.log("Core State (Renderer): ", Core.state);
+    Core = await window.api.getCore();
   });
+
+  // Panel 3 debug button for testing
+  debugButton.addEventListener('click', async () => {
+    console.log("Core in Renderer: ", Core);
+    await window.api.printCore();
+  });
+
 
   //* **************************************** *//
   //         PANEL 1: DRAG AND DROP AREA        //
