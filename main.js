@@ -215,12 +215,18 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           ])
           .on('progress', progress => {
             if (progress.percent !== undefined) {
-              encodeProgress[index] = { percent: (progress.percent).toFixed(2) }; // Update encode progress for each file
+              encodeProgress[index] = { percent: (progress.percent).toFixed(2) };
               console.log(encodeProgress)
             }
           })
-          .on('end', () => resolve(encodedFiles[index]))
-          .on('error', (err) => reject(`Error encoding ${file}: ${err.message}`))
+          .on('end', () => {
+            console.log(`Encoding complete for file: ${file}`);
+            resolve(encodedFiles[index]);
+          })
+          .on('error', (err) => {
+            console.error(`Error encoding ${file}: ${err.message}`);
+            reject(`Error encoding ${file}: ${err.message}`);
+          })
           .save(encodedFiles[index]);
       });
     };
@@ -246,8 +252,15 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
               console.log(concatProgress)
             }
           })
-          .on('end', () => resolve('vidCat Complete!'))
-          .on('error', (err) => reject(`Error: ${err.message}`))
+          .on('end', () => {
+            console.log(`Concatenation complete for file`);
+            resolve('vidCat Complete!');
+          })
+
+          .on('error', (err) => {
+            console.log(`Concatenation error for file`);
+            reject(`Error: ${err.message}`)
+          })
           .save(outputPath);
       })
       .catch(err => reject(err));
