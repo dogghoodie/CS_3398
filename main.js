@@ -20,7 +20,7 @@ let Core = {
   fileList: [],
   outputPath: "",
   percentage: 0,
-  ffencodeProcess: null, // Store the ffmpeg encode here
+  ffmpegProcess: null, // Store the ffmpeg encode here
   encodingProcesses: [],
 };
 
@@ -308,6 +308,8 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           })
           .on('end', () => {
             Core.state = "idle";
+            Core.encodingProcesses = [];
+            Core.ffmpegProcess = null;
             console.log(`Concatenation complete for file`);
             console.log("File written to: ", Core.outputPath);
             console.log("Core State (Main): ", Core.state);
