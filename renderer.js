@@ -89,27 +89,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // PANEL 3: Handle runButton press
   runButton.addEventListener('click', async () => {
-    const files = Core.fileList;
-    const outputPath = Core.outputPath;
-
-    console.log('Files: ${JSON.stringify(files)}');
-    console.log('Output path: ${outputPath}');
-
-    if (!outputPath) {
-      console.error('Output path is not set');
-      return;
+    if (Core.state != "running") {
+      const files = Core.fileList;
+      const outputPath = Core.outputPath;
+      if (Core.state == "idle") {
+        Core.state = "running";
+      }
+  
+      console.log('Files: ${JSON.stringify(files)}');
+      console.log('Output path: ${outputPath}');
+  
+      if (!outputPath) {
+        console.error('Output path is not set');
+        return;
+      }
+  
+      try {
+        Core.state = "running";
+        await updateCore({ state: Core.state});
+        const result = await window.api.concatVideos(files, outputPath);
+        console.log(result);
+        Core.state = await window.api.getCoreState();
+        console.log("Core State (Renderer): ", Core.state);
+      } catch (error) {
+        console.error(error);
+      }
+    } else {
+      alert("vidCat already running!");
     }
 
-    try {
-      Core.state = "running";
-      await updateCore({ state: Core.state});
-      const result = await window.api.concatVideos(files, outputPath);
-      console.log(result);
-      Core.state = await window.api.getCoreState();
-      console.log("Core State (Renderer): ", Core.state);
-    } catch (error) {
-      console.error(error);
-    }
   });
 
   // PANEL 3: Handle cancelButton press
