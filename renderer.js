@@ -72,6 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
+      Core.state = "running";
+      await updateCore({ state: Core.state});
       const result = await window.api.concatVideos(files, outputPath);
       console.log(result);
     } catch (error) {
@@ -81,12 +83,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // PANEL 3: Handle cancelButton press
   cancelButton.addEventListener('click', async () => {
+    console.log("cancelButton eventListener called");
     if (Core.state === 'running') {
       console.log('Cancel button pressed during "running"');
       try {
         const cancel = await window.api.cancelConcat();
         if (cancel) {
           console.log('Cancellation success!');
+          Core.state = "idle";
+          await updateCore({ state: Core.state});
           // Additional logic if needed on successful cancellation
         } else {
           console.error('Cancel failed!');

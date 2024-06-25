@@ -114,6 +114,13 @@ function getAllFiles(dirPath, formats, arrayOfFiles) {
   return arrayOfFiles;
 }
 
+// sleep
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
 //* **************************************** *//
 //                IPC ROUTES                  //
 //* **************************************** *//
@@ -203,6 +210,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
 
     // Re-encode all files to the same format and resolution
     const encodeFile = (file, index) => {
+      console.log("ffmpeg call. core status: ", Core.state);
       return new Promise((resolve, reject) => {
         ffmpeg(file)
           .outputOptions([
@@ -237,6 +245,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           .save(outputPath);
      // Store the ffmpeg process for later cancellation
      Core.ffmpegProcess = command;
+     console.log("Core.ffmpegProcess: ", Core.ffmpegProcess);
 
      // Listen for SIGINT signal to cancel the ffmpeg process
      process.on('SIGINT', () => {
@@ -286,9 +295,14 @@ ipcMain.handle('select-folder', async () => {
 
 // Cancel video concatenation
 ipcMain.handle('cancel-concat', async () => {
-  if (ffmpegProcess) {
-    ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
-    ffmpegProcess = null; // Clear the ffmpeg process
+  console.log("cancel-concat called");
+  while (Core.state == "running" && Core.ffmpegProcess == null)
+  {
+    await sleep(1);
+  }
+  if (Core.ffmpegProcess) {
+    await Core.ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
+    Core.ffmpegProcess = null; // Clear the ffmpeg process
     return 'FFmpeg process cancelled';
   } else {
     throw new Error('No active FFmpeg process to cancel');
