@@ -128,6 +128,19 @@ function resolveHome(filepath) {
   return filepath;
 }
 
+// resolve Relative Path
+function resolveRelativePath(filepath) {
+  if (filepath.startsWith('/')) {
+    const resolvedPath = path.resolve(process.cwd(), `.${filepath}`);
+    const directory = path.dirname(resolvedPath);
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory, { recursive: true });
+    }
+    return resolvedPath;
+  }
+  return filepath;
+}
+
 // clean up tempDir
 async function deleteFileWithRetry(filePath, retries = 5, delay = 500) {
   for (let i = 0; i < retries; i++) {
@@ -223,7 +236,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   let concatProgress = {}; // Object to store concatenation progress
 
   // Handle ambiguous filepath
-  Core.outputPath = resolveHome(Core.outputPath);
+  Core.outputPath = resolveRelativePath(Core.outputPath);
   outputPath = Core.outputPath;
   console.log("Disambiguated outputPath:", Core.outputPath);
 

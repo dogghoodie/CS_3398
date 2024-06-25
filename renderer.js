@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${year}${month}${day}_${hours}${minutes}${seconds}`;
   }
 
-  const defaultOutputPath = `~/${getCurrentDateTime()}.mp4`;
+  const defaultOutputPath = `/output/${getCurrentDateTime()}.mp4`;
   outputPathInput.value = defaultOutputPath;
 
   // Declare Core variable in the proper scope
