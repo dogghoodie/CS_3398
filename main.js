@@ -19,7 +19,8 @@ let Core = {
   state: "idle",
   fileList: [],
   outputPath: "",
-  percentage: 0,
+  percentageEncode: 0,
+  percentageConcat: 0,
   ffmpegProcess: null, // Store the ffmpeg encode here
   encodingProcesses: [],
 };
@@ -27,7 +28,6 @@ let Core = {
 //* **************************************** *//
 //             WINDOW LAUNCH                  //
 //* **************************************** *//
-
 
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
@@ -204,6 +204,16 @@ ipcMain.handle('get-core-state', async () => {
   return Core.state;
 });
 
+// get-core-percents
+// Renderer.js -> IPC.get-core-percents()
+// Reads the percents of "Core" from main.
+ipcMain.handle('get-core-percents', async () => {
+  return {
+    percentageEncode: Core.percentageEncode,
+    percentageConcat: Core.percentageConcat
+  };
+});
+
 // set-core
 // Renderer.js -> IPC.set-core() -> main.js.Core
 // writes status of Core struct from renderer.js to main.js
@@ -278,7 +288,9 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           .on('progress', progress => {
             if (progress.percent !== undefined) {
               encodeProgress[index] = { percent: (progress.percent).toFixed(2) };
-              console.log(encodeProgress);
+              // console.log(encodeProgress[index]);
+              Core.percentageEncode = encodeProgress[index].percent;
+              console.log("Core percent Encode: ", Core.percentageEncode);
             }
           })
           .on('end', () => {
@@ -317,7 +329,9 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           .on('progress', progress => {
             if (progress.percent !== undefined) {
               concatProgress = { percent: (progress.percent / encodedFiles.length).toFixed(2) }; // Update concat progress
-              console.log(concatProgress);
+              Core.state = "running-concat";
+              Core.percentageConcat = concatProgress.percent;
+              console.log(Core.percentageConcat);
             }
           })
           .on('end', () => {

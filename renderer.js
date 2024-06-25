@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectFileButton = document.getElementById('selectFileButton');
   const selectFolderButton = document.getElementById('selectFolderButton');
   const cancelButton = document.getElementById('cancelButton'); // Add cancel button
+  const progressBar = document.getElementById('progressBar');
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   // prevents output path text box from being able to detect drag and drop for files
   // without this, dropping a file in that text box immediately plays the video in a new window
@@ -33,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // set output defaults
-  locationInput.value = `/output`;
+  locationInput.value = `/output/`;
   fileNameInput.value = `${getCurrentDateTime()}.mp4`;
   defaultOutputPath = locationInput.value + fileNameInput.value;
 
@@ -68,57 +71,58 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOrderedList();
   }
 
-  // PANEL 3: Handle output path button event
-  /*
-  setOutputPathButton.addEventListener('click', async () => {
-    const outputPath = outputPathInput.value;
-    if (outputPath) {
-      await updateCore({ outputPath: outputPath });
-      console.log('Output path set to:', outputPath);
-    } else {
-      console.error('Output path is empty');
-    }
-  });
-  */
-
-  /*
-  outputPathInput.addEventListener('keydown', async (event) => {
-    if (event.key === 'Enter') {
-      const outputPath = outputPathInput.value;
-      if (outputPath) {
-        await updateCore({ outputPath: outputPath });
-        console.log('Output path set to:', outputPath);
-      } else {
-        console.error('Output path is empty');
+  async function progressLoop() {
+    while (Core.state !== "idle") {
+      // Update Core state and percentages
+      Core.state = await window.api.getCoreState();
+      const percentages = await window.api.getCorePercents();
+      // console.log("percentages: ", percentages);
+      Core.percentageEncode = percentages.percentageEncode;
+      Core.percentageConcat = percentages.percentageConcat;
+  
+      // Ensure the progress values are finite numbers
+      if (Core.state === "running-encode" && isFinite(Core.percentageEncode)) {
+        progressBar.value = Core.percentageEncode;
+        console.log("Progress bar value: ", progressBar.value);
+      } else if (Core.state === "running-concat" && isFinite(Core.percentageConcat)) {
+        progressBar.value = Core.percentageConcat;
+        console.log("Progress bar value: ", progressBar.value);
       }
+  
+      // Wait for a short delay before the next iteration
+      await delay(100);
     }
-  });
-  */
+  
+    // Reset progress bar when Core state is idle
+    progressBar.value = 0;
+  }
 
   // PANEL 3: Handle runButton press
   runButton.addEventListener('click', async () => {
-    if (Core.state != "running") {
+    if (Core.state !== "running-encoding" && Core.state !== "running-concat") {
       const files = Core.fileList;
       const outputPath = locationInput.value + fileNameInput.value;
       Core.outputPath = outputPath;
   
-      console.log('Files: ${JSON.stringify(files)}');
-      console.log('Output path: ${outputPath}');
+      console.log(`Files: ${JSON.stringify(files)}`);
+      console.log(`Output path: ${outputPath}`);
   
       if (!outputPath) {
         console.error('Output path is not set');
         return;
       }
-
-      else if (files.length < 2) {
+  
+      if (files.length < 2) {
         console.error('Not enough files defined');
         alert("Less than two filepaths defined!");
         return;
       }
-      
+  
       try {
-        Core.state = "running";
-        await updateCore({ state: Core.state});
+        Core.state = "running-encoding";
+        await updateCore({ state: Core.state });
+        // Start the progress loop
+        progressLoop();
         const result = await window.api.concatVideos(files, outputPath);
         console.log(result);
         Core.state = await window.api.getCoreState();
@@ -126,17 +130,16 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (error) {
         console.error(error);
       }
-
+  
     } else {
       alert("vidCat already running!");
     }
-
   });
 
   // PANEL 3: Handle cancelButton press
   cancelButton.addEventListener('click', async () => {
     console.log("cancelButton eventListener called");
-    if (Core.state === 'running') {
+    if (Core.state === 'running-encoding' || Core.state === 'running-concat') {
       console.log('Cancel button pressed during "running"');
       try {
         const cancel = await window.api.cancelConcat();

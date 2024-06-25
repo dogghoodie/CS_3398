@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   queryFiles: (dirPath, formats) => ipcRenderer.invoke('query-files', dirPath, formats),
   getCore: () => ipcRenderer.invoke('get-core'),
   getCoreState: () => ipcRenderer.invoke('get-core-state'),
+  getCorePercents: () => ipcRenderer.invoke('get-core-percents'),
   setCore: (newCore) => ipcRenderer.invoke('set-core', newCore),
   getStats: (filePath) => ipcRenderer.invoke('get-stats', filePath),
   selectFile: () => ipcRenderer.invoke('select-file'),

@@ -125,3 +125,32 @@ body, html {
 .dragging {
   opacity: 0.5;
 }
+
+#progressBar {
+  width: 100%;
+  height: 30px; /* Increased height for more girth */
+  border-radius: 15px; /* Rounded corners */
+  overflow: hidden; /* Ensure rounded corners */
+  background-color: #e1e1e1; /* Background color */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1); /* Inner shadow for depth */
+}
+
+#progressBar::-webkit-progress-bar {
+  background-color: #e1e1e1; /* Background color for webkit browsers */
+  border-radius: 15px; /* Rounded corners for webkit browsers */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1); /* Inner shadow for webkit browsers */
+}
+
+#progressBar::-webkit-progress-value {
+  background-color: #4caf50; /* Progress color */
+  border-radius: 15px; /* Rounded corners for webkit browsers */
+  transition: width 0.25s; /* Smooth transition for progress */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2); /* Shadow for progress */
+}
+
+#progressBar::-moz-progress-bar {
+  background-color: #4caf50; /* Progress color for Firefox */
+  border-radius: 15px; /* Rounded corners for Firefox */
+  transition: width 0.25s; /* Smooth transition for progress */
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2); /* Shadow for progress */
+}
