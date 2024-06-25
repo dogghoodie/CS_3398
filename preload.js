@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('api', {
   concatVideos: (files, outputPath) => ipcRenderer.invoke('concat-videos', files, outputPath),
   queryFiles: (dirPath, formats) => ipcRenderer.invoke('query-files', dirPath, formats),
   getCore: () => ipcRenderer.invoke('get-core'),
+  getCoreState: () => ipcRenderer.invoke('get-core-state'),
   setCore: (newCore) => ipcRenderer.invoke('set-core', newCore),
   getStats: (filePath) => ipcRenderer.invoke('get-stats', filePath),
   selectFile: () => ipcRenderer.invoke('select-file'),

@@ -182,6 +182,14 @@ ipcMain.handle('get-core', async () => {
   return Core;
 });
 
+// get-core-state
+// Renderer.js -> IPC.get-core-state()
+// Reads only the state of "Core" from main.
+// Necessary because get-core cannot return complex properties like encoded files
+ipcMain.handle('get-core-state', async () => {
+  return Core.state;
+});
+
 // set-core
 // Renderer.js -> IPC.set-core() -> main.js.Core
 // writes status of Core struct from renderer.js to main.js
@@ -196,18 +204,7 @@ ipcMain.handle('set-core', async (event, newCore) => {
 ipcMain.handle('get-stats', async (event, filePath) => {
   try {
     const stats = fs.statSync(filePath);
-    console.log(stats);
-    console.log(stats.isDirectory());
-    console.log(stats.isFile());
     return {
-
-      /*
-        for some reason, I can return the stats object, but
-        it doesn't keep the methods associated with that object
-        when I try to call it in renderer.js. So for now I'm
-        only returning the necessary properties.
-      */
-
       isDirectory: stats.isDirectory(),
       isFile: stats.isFile(),
     };
@@ -256,7 +253,6 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
     
     // Re-encode all files to the same format and resolution
     const encodeFile = (file, index) => {
-      console.log("ffmpeg call. core status:", Core.state);
       return new Promise((resolve, reject) => {
         const process = ffmpeg(file)
           .outputOptions([
@@ -311,7 +307,10 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
             }
           })
           .on('end', () => {
+            Core.state = "idle";
             console.log(`Concatenation complete for file`);
+            console.log("File written to: ", Core.outputPath);
+            console.log("Core State (Main): ", Core.state);
             resolve('vidCat Complete!');
           })
           .on('error', (err) => {
@@ -322,7 +321,6 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
 
         // Store the ffmpeg process for later cancellation
         Core.ffmpegProcess = command;
-        console.log("Core.ffmpegProcess:", Core.ffmpegProcess);
 
         // Listen for SIGINT signal to cancel the ffmpeg process
         process.on('SIGINT', () => {
@@ -394,3 +392,4 @@ ipcMain.handle('select-folder', async () => {
   }
 
 })
+

@@ -105,6 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
       await updateCore({ state: Core.state});
       const result = await window.api.concatVideos(files, outputPath);
       console.log(result);
+      Core.state = await window.api.getCoreState();
+      console.log("Core State (Renderer): ", Core.state);
     } catch (error) {
       console.error(error);
     }
@@ -131,7 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       console.log('Cancel button pressed while not "running"');
     }
-    Core = await window.api.getCore();
+    Core.state = await window.api.getCoreState();
+    console.log("Core State (Renderer): ", Core.state);
   });
 
   //* **************************************** *//
@@ -166,10 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const filePath = files[i].path;
         try {
           const stats = await window.api.getStats(filePath);
-
-          console.log(stats);
-          console.log("panel 1 drop: isDir? ", stats.isDirectory);
-          console.log("panel 1 drop: isFile? ", stats.isFile);
 
           if (stats.isDirectory) {
             // If it's a directory, query all files in the directory
