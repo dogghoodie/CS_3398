@@ -175,6 +175,10 @@ ipcMain.handle('get-stats', async (event, filePath) => {
 // Calls ffmpeg concat execution
 
 ipcMain.handle('concat-videos', async (event, files, outputPath) => {
+   // Variables to store progress information
+   let encodeProgress = {}; // Object to store encoding progress
+   let concatProgress = {}; // Object to store concatenation progress
+
   return new Promise((resolve, reject) => {
     console.log('Files:', files);
     console.log('Output Path:', outputPath);
@@ -198,7 +202,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
     }
 
     const encodedFiles = files.map((file, index) => path.join('./tempDir', `encoded${index}.mp4`));
-
+    
     // Re-encode all files to the same format and resolution
     const encodeFile = (file, index) => {
       return new Promise((resolve, reject) => {
@@ -209,6 +213,14 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
             '-b:a 192k',
             '-s 1280x720' // Adjust resolution as needed
           ])
+          .on('progress', progress => {
+            if (progress.percent !== undefined) {
+              if(encodeProgress[index] < (progress.percent)){
+              encodeProgress[index] = { percent: progress.percent }; // Update encode progress for each file
+              }
+            }
+            console.log(encodeProgress)
+          })
           .on('end', () => resolve(encodedFiles[index]))
           .on('error', (err) => reject(`Error encoding ${file}: ${err.message}`))
           .save(encodedFiles[index]);
@@ -230,6 +242,14 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
         command
           .complexFilter(filterComplex)
           .outputOptions('-map', '[outv]', '-map', '[outa]')
+          .on('progress', progress => {
+            if (progress.percent !== undefined) {
+              if(concatProgress < (progress.percent)){
+                concatProgress = { percent: progress.percent / encodedFiles.length }; // Update concat progress
+              }
+            }
+            console.log(encodeProgress)
+          })
           .on('end', () => resolve('vidCat Complete!'))
           .on('error', (err) => reject(`Error: ${err.message}`))
           .save(outputPath);
