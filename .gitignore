@@ -2,7 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=jetbrains+all,git,vim,visualstudio,visualstudiocode,node
 
 ## Chris 06/24/2024
-../output/
+./output/
 
 ### Git ###
 # Created by git for backups. To disable backups in Git:
