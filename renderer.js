@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectFolderButton = document.getElementById('selectFolderButton');
   const cancelButton = document.getElementById('cancelButton'); // Add cancel button
   const progressBar = document.getElementById('progressBar');
+  const stateLabel = document.getElementById('stateLabel');
+  const progressLabel = document.getElementById('progressLabel');
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -72,20 +74,42 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function progressLoop() {
+    console.log("Progress Loop started.");
     while (Core.state !== "idle") {
       // Update Core state and percentages
       Core.state = await window.api.getCoreState();
       const percentages = await window.api.getCorePercents();
       // console.log("percentages: ", percentages);
+
       Core.percentageEncode = percentages.percentageEncode;
       Core.percentageConcat = percentages.percentageConcat;
+
+      console.log("Progress Loop Core State: ", Core.state);
+
+      // update state label
+      if (Core.state == "running-encode") {
+        stateLabel.textContent = "encode";
+      } else if (Core.state == "running-concat") {
+        if (Core.percentageConcat == 100) {
+          stateLabel.textContent = "complete";
+        } else {
+          stateLabel.textContent = "concat";
+        }
+      }
   
       // Ensure the progress values are finite numbers
-      if (Core.state === "running-encode" && isFinite(Core.percentageEncode)) {
-        progressBar.value = Core.percentageEncode;
+      if (Core.state == "running-encode") {
+        console.log("entered ProgressLoop running-encode");
+        if (Core.percentageEncode >= 0) {
+          progressBar.value = Core.percentageEncode;
+          progressLabel.textContent = `${Core.percentageEncode}%`;
+        }
         console.log("Progress bar value: ", progressBar.value);
-      } else if (Core.state === "running-concat" && isFinite(Core.percentageConcat)) {
-        progressBar.value = Core.percentageConcat;
+      } else if (Core.state == "running-concat") {
+        if (Core.percentageConcat >= 0) {
+          progressBar.value = Core.percentageConcat;
+          progressLabel.textContent = `${Core.percentageConcat}%`;
+        }
         console.log("Progress bar value: ", progressBar.value);
       }
   
@@ -94,12 +118,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   
     // Reset progress bar when Core state is idle
-    progressBar.value = 0;
+    if (stateLabel.textContent == "complete") {
+      progressBar.value = 100;
+    }
+    
   }
 
   // PANEL 3: Handle runButton press
   runButton.addEventListener('click', async () => {
-    if (Core.state !== "running-encoding" && Core.state !== "running-concat") {
+    if (Core.state !== "running-encode" && Core.state !== "running-concat") {
       const files = Core.fileList;
       const outputPath = locationInput.value + fileNameInput.value;
       Core.outputPath = outputPath;
@@ -119,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
   
       try {
-        Core.state = "running-encoding";
+        Core.state = "running-encode";
         await updateCore({ state: Core.state });
         // Start the progress loop
         progressLoop();
@@ -130,6 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (error) {
         console.error(error);
       }
+
+      stateLabel.textContent = "complete";
+      progressLabel.textContent = "100%";
   
     } else {
       alert("vidCat already running!");
@@ -139,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // PANEL 3: Handle cancelButton press
   cancelButton.addEventListener('click', async () => {
     console.log("cancelButton eventListener called");
-    if (Core.state === 'running-encoding' || Core.state === 'running-concat') {
+    if (Core.state == 'running-encode' || Core.state == 'running-concat') {
       console.log('Cancel button pressed during "running"');
       try {
         const cancel = await window.api.cancelConcat();
