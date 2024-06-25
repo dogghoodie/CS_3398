@@ -311,9 +311,11 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
             console.log(`Concatenation complete for file`);
             console.log("File written to: ", Core.outputPath);
             console.log("Core State (Main): ", Core.state);
+            cleanUpTempDir();
             resolve('vidCat Complete!');
           })
           .on('error', (err) => {
+            cleanUpTempDir();
             console.log(`Concatenation error for file`);
             reject(`Error: ${err.message}`);
           })
