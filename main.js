@@ -18,7 +18,9 @@ let Core = {
   state: "idle",
   fileList: [],
   outputPath: "",
-  percentage: 0
+  percentage: 0,
+  ffmpegProcess: null // Store the ffmpeg process here
+
 };
 
 //* **************************************** *//
@@ -111,6 +113,13 @@ function getAllFiles(dirPath, formats, arrayOfFiles) {
 
   return arrayOfFiles;
 }
+
+// sleep
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 
 //* **************************************** *//
 //                IPC ROUTES                  //
@@ -205,6 +214,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
     
     // Re-encode all files to the same format and resolution
     const encodeFile = (file, index) => {
+      console.log("ffmpeg call. core status: ", Core.state);
       return new Promise((resolve, reject) => {
         ffmpeg(file)
           .outputOptions([
@@ -262,9 +272,20 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
             reject(`Error: ${err.message}`)
           })
           .save(outputPath);
-      })
-      .catch(err => reject(err));
-  });
+     // Store the ffmpeg process for later cancellation
+     Core.ffmpegProcess = command;
+     console.log("Core.ffmpegProcess: ", Core.ffmpegProcess);
+
+     // Listen for SIGINT signal to cancel the ffmpeg process
+     process.on('SIGINT', () => {
+       if (Core.ffmpegProcess) {
+         Core.ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
+         Core.ffmpegProcess = null; // Clear the ffmpeg process
+       }
+     });
+   })
+   .catch(err => reject(err));
+ });
 });
 // select-file
 // Renderer.js.Panel1 -> IPC.select-file()
@@ -300,3 +321,19 @@ ipcMain.handle('select-folder', async () => {
   }
 
 })
+
+// Cancel video concatenation
+ipcMain.handle('cancel-concat', async () => {
+  console.log("cancel-concat called");
+  while (Core.state == "running" && Core.ffmpegProcess == null)
+  {
+    await sleep(1);
+  }
+  if (Core.ffmpegProcess) {
+    await Core.ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
+    Core.ffmpegProcess = null; // Clear the ffmpeg process
+    return 'FFmpeg process cancelled';
+  } else {
+    throw new Error('No active FFmpeg process to cancel');
+  }
+});

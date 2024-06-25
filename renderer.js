@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const runButton = document.getElementById('runButton');
   const selectFileButton = document.getElementById('selectFileButton');
   const selectFolderButton = document.getElementById('selectFolderButton');
+  const cancelButton = document.getElementById('cancelButton'); // Add cancel button
 
   // prevents output path text box from being able to detect drag and drop for files
   // without this, dropping a file in that text box immediately plays the video in a new window
@@ -71,10 +72,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
+      Core.state = "running";
+      await updateCore({ state: Core.state});
       const result = await window.api.concatVideos(files, outputPath);
       console.log(result);
     } catch (error) {
       console.error(error);
+    }
+  });
+
+  // PANEL 3: Handle cancelButton press
+  cancelButton.addEventListener('click', async () => {
+    console.log("cancelButton eventListener called");
+    if (Core.state === 'running') {
+      console.log('Cancel button pressed during "running"');
+      try {
+        const cancel = await window.api.cancelConcat();
+        if (cancel) {
+          console.log('Cancellation success!');
+          Core.state = "idle";
+          await updateCore({ state: Core.state});
+          // Additional logic if needed on successful cancellation
+        } else {
+          console.error('Cancel failed!');
+        }
+      } catch (error) {
+        console.error('Error during cancellation:', error.message);
+      }
+    } else {
+      console.log('Cancel button pressed while not "running"');
     }
   });
 
