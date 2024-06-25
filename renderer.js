@@ -18,6 +18,21 @@ document.addEventListener('DOMContentLoaded', () => {
   outputPathInput.addEventListener('dragleave', preventDefaultBehavior);
   outputPathInput.addEventListener('drop', preventDefaultBehavior);
 
+  // start by using $dateTime as default output value for .mp4
+  function getCurrentDateTime() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}${month}${day}_${hours}${minutes}${seconds}`;
+  }
+
+  const defaultOutputPath = `~/${getCurrentDateTime()}.mp4`;
+  outputPathInput.value = defaultOutputPath;
+
   // Declare Core variable in the proper scope
   let Core;
 
@@ -26,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       Core = await window.api.getCore();
       console.log('Initial Core in Renderer.js:', Core);
+      Core.outputPath = defaultOutputPath;
+      updateCore({outputPath: Core.outputPath});
       updateOrderedList();
     } catch (error) {
       console.error('Error initializing Core:', error.message);
@@ -48,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // PANEL 3: Handle output path button event
+ 
   setOutputPathButton.addEventListener('click', async () => {
     const outputPath = outputPathInput.value;
     if (outputPath) {
@@ -55,6 +73,18 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Output path set to:', outputPath);
     } else {
       console.error('Output path is empty');
+    }
+  });
+
+  outputPathInput.addEventListener('keydown', async (event) => {
+    if (event.key === 'Enter') {
+      const outputPath = outputPathInput.value;
+      if (outputPath) {
+        await updateCore({ outputPath: outputPath });
+        console.log('Output path set to:', outputPath);
+      } else {
+        console.error('Output path is empty');
+      }
     }
   });
 

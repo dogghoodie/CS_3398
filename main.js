@@ -4,6 +4,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');                     // needed to query file system
+const { homedir } = require('os');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
@@ -19,7 +20,8 @@ let Core = {
   fileList: [],
   outputPath: "",
   percentage: 0,
-  ffmpegProcess: null // Store the ffmpeg process here
+  ffencodeProcess: null, // Store the ffmpeg encode here
+  ffmpegProcess: null // Store the ffmpeg concat process here
 
 };
 
@@ -115,9 +117,16 @@ function getAllFiles(dirPath, formats, arrayOfFiles) {
 }
 
 // sleep
-
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// resolve homeDir
+function resolveHome(filepath) {
+  if (filepath.startsWith('~')) {
+    return path.join(homedir(), filepath.slice(1));
+  }
+  return filepath;
 }
 
 
@@ -184,10 +193,15 @@ ipcMain.handle('get-stats', async (event, filePath) => {
 // Calls ffmpeg concat execution
 
 ipcMain.handle('concat-videos', async (event, files, outputPath) => {
-   // Variables to store progress information
-   let encodeProgress = {}; // Object to store encoding progress
-   let concatProgress = {}; // Object to store concatenation progress
+  // Variables to store progress information
+  let encodeProgress = {}; // Object to store encoding progress
+  let concatProgress = {}; // Object to store concatenation progress
 
+  // handle ambiguous filepath
+  Core.outputPath = resolveHome(Core.outputPath);
+  outputPath = Core.outputPath;
+  console.log("disambiguated outputPath: ", Core.outputPath);
+  
   return new Promise((resolve, reject) => {
     console.log('Files:', files);
     console.log('Output Path:', outputPath);
