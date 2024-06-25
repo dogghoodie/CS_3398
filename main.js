@@ -141,7 +141,7 @@ function resolveRelativePath(filepath) {
   return filepath;
 }
 
-// clean up tempDir
+// try to delete a given file repeatedly
 async function deleteFileWithRetry(filePath, retries = 5, delay = 500) {
   for (let i = 0; i < retries; i++) {
     try {
@@ -160,6 +160,7 @@ async function deleteFileWithRetry(filePath, retries = 5, delay = 500) {
   }
 }
 
+// clean up temp dir
 async function cleanUpTempDir() {
   const tempDir = path.resolve('./tempDir');
   if (fs.existsSync(tempDir)) {

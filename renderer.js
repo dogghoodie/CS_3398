@@ -92,9 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (Core.state != "running") {
       const files = Core.fileList;
       const outputPath = Core.outputPath;
-      if (Core.state == "idle") {
-        Core.state = "running";
-      }
   
       console.log('Files: ${JSON.stringify(files)}');
       console.log('Output path: ${outputPath}');
@@ -103,7 +100,13 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Output path is not set');
         return;
       }
-  
+
+      else if (files.length < 2) {
+        console.error('Not enough files defined');
+        alert("Less than two filepaths defined!");
+        return;
+      }
+      
       try {
         Core.state = "running";
         await updateCore({ state: Core.state});
@@ -114,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (error) {
         console.error(error);
       }
+
     } else {
       alert("vidCat already running!");
     }
