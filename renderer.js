@@ -210,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
   selectFileButton.addEventListener('click', async () => {
     try {
       const file = await window.api.selectFile();
+      console.log('Selected file:', file);
       if (file) {
         Core.fileList.push(file);
         await updateCore({ fileList: Core.fileList });
@@ -224,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
   selectFolderButton.addEventListener('click', async () => {
     try {
       const folder = await window.api.selectFolder();
+      console.log('Selected folder:', folder);
       if (folder){
         const newFiles = await window.api.queryFiles(folder, ['.mp4']);
         newFiles.forEach(file => {
@@ -366,4 +368,33 @@ document.addEventListener('DOMContentLoaded', () => {
       item.classList.remove('dragging');
     });
   }
+
+// **************************************** //
+  //         ADDITIONAL FUNCTIONALITY         //
+  // **************************************** //
+
+  // Example: Query files
+  document.getElementById('queryFilesButton').addEventListener('click', async () => {
+    const dirPath = document.getElementById('dirPathInput').value;
+    const formats = ['.mp4', '.avi'];
+    try {
+      const files = await window.api.queryFiles(dirPath, formats);
+      console.log('Query files result:', files);
+    } catch (error) {
+      console.error('Error querying files:', error);
+    }
+  });
+
+  // Example: Concatenate videos
+  document.getElementById('concatButton').addEventListener('click', async () => {
+    const files = Core.fileList; // Assuming Core is accessible
+    const outputPath = 'output.mp4'; // Replace with actual output path logic if needed
+    try {
+      const result = await window.api.concatVideos(files, outputPath);
+      console.log('Concatenation result:', result);
+    } catch (error) {
+      console.error('Error during concatenation:', error);
+    }
+  });
+
 });

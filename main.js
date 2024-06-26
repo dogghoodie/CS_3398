@@ -25,6 +25,36 @@ let Core = {
 };
 
 //* **************************************** *//
+//             CRITICAL PATHS                 //
+//* **************************************** *//
+const criticalPaths = {
+  windows: [
+    'C:\\Windows\\System32',
+    'C:\\Windows\\SysWOW64',
+    'C:\\Windows\\WinSxS',
+    'C:\\Program Files (x86)',
+    'C:\\ProgramData',
+    'C:\\Boot',
+    'C:\\Recovery',
+    'C:\\Swapfile.sys',
+  ],
+  macos: [
+    '/System',
+    '/Library',
+    '/usr',
+    '/bin',
+    '/etc',
+    '/var',
+  ]
+};
+
+function isCriticalPath(filePath) {
+  const platform = process.platform;
+  const paths = platform === 'win32' ? criticalPaths.windows : criticalPaths.macos;
+  return paths.some(criticalPath => filePath.startsWith(criticalPath));
+}
+
+//* **************************************** *//
 //             WINDOW LAUNCH                  //
 //* **************************************** *//
 
@@ -180,6 +210,10 @@ async function cleanUpTempDir() {
 // Renderer.js.Panel1 -> IPC.query-files() -> main.js.getAllFiles()
 // calls getAllFiles() function, returns an array of strings. 
 ipcMain.handle('query-files', async (event, dirPath, formats) => {
+  if (isCriticalPath(dirPath)) {
+    console.error('Attempt to read from a critical path:', dirPath);
+    return [];
+  }
   try {
     const files = getAllFiles(dirPath, formats);
     return files;
@@ -216,6 +250,10 @@ ipcMain.handle('set-core', async (event, newCore) => {
 // Renderer.js.Panel1 -> IPC.get-stats() -> main.js()
 // renderer.js needs to us 'fs' library in order to read file properties
 ipcMain.handle('get-stats', async (event, filePath) => {
+  if (isCriticalPath(filePath)) {
+    console.error('Attempt to read stats of a critical path:', filePath);
+    return {};
+  }
   try {
     const stats = fs.statSync(filePath);
     return {
@@ -241,6 +279,10 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   outputPath = Core.outputPath;
   console.log("Disambiguated outputPath:", Core.outputPath);
 
+  if (isCriticalPath(filePath)) {
+    console.error('Attempt to read stats of a critical path:', filePath);
+    return {};
+  }
   return new Promise((resolve, reject) => {
     console.log('Files:', files);
     console.log('Output Path:', outputPath);
@@ -256,6 +298,10 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
     files.forEach(file => {
       if (typeof file !== 'string' || file.trim() === '') {
         return reject(new Error('Invalid file path'));
+      }
+      if (isCriticalPath(file)) {
+        console.error('Attempt to read from a critical path:', file);
+        return reject(new Error('Cannot read from a critical path'));
       }
     });
 
@@ -403,11 +449,15 @@ ipcMain.handle('select-folder', async () => {
     properties: ['openDirectory']
   });
 
-  if (result.canceled){
+  if (result.canceled) return null;
+  if (result.filePaths.length === 0) return null;
+
+  const folderPath = result.filePaths[0];
+  if (isCriticalPath(folderPath)) {
+    console.error('Attempt to select a critical folder:', folderPath);
     return null;
-  } else {
-    return result.filePaths[0];
   }
+  return folderPath;
 
 })
 
