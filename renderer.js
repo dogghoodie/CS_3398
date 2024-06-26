@@ -84,6 +84,13 @@ document.addEventListener('DOMContentLoaded', () => {
       Core.percentageEncode = percentages.percentageEncode;
       Core.percentageConcat = percentages.percentageConcat;
 
+      // contextualized percentage progress
+      // encoding takes about 80% of run time and concat 20%
+      // weighting the percentage progress values to display
+      // progress more accurately as a whole. 
+      encodePercentContext = parseFloat((Core.percentageEncode * 0.8).toFixed(2));
+      concatPercentContext = parseFloat((Core.percentageConcat * 0.2).toFixed(2));
+
       // update state label
       if (Core.state == "running-encode") {
         stateLabel.textContent = "encode";
@@ -99,14 +106,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (Core.state == "running-encode") {
         console.log("entered ProgressLoop running-encode");
         if (Core.percentageEncode >= 0) {
-          progressBar.value = Core.percentageEncode;
-          progressLabel.textContent = `${Core.percentageEncode}%`;
+          if (encodePercentContext > progressBar.value) {
+            progressBar.value = encodePercentContext;
+            progressLabel.textContent = `${encodePercentContext}%`;
+          }
         }
         console.log("Progress bar value: ", progressBar.value);
       } else if (Core.state == "running-concat") {
         if (Core.percentageConcat >= 0) {
-          progressBar.value = Core.percentageConcat;
-          progressLabel.textContent = `${Core.percentageConcat}%`;
+          progressBar.value = parseFloat((encodePercentContext + concatPercentContext).toFixed(2));
+          progressLabel.textContent = `${progressBar.value}%`;
         }
         console.log("Progress bar value: ", progressBar.value);
       }
