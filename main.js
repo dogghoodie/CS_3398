@@ -214,6 +214,13 @@ ipcMain.handle('get-core-percents', async () => {
   };
 });
 
+// get-core-outputPath
+// Renderer.js -> IPC.get-core-outputpath()
+// Reads the (likely disambiguated) output path from main
+ipcMain.handle('get-core-outputpath', async () => {
+  return Core.outputPath;
+});
+
 // set-core
 // Renderer.js -> IPC.set-core() -> main.js.Core
 // writes status of Core struct from renderer.js to main.js

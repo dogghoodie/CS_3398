@@ -63,20 +63,16 @@ body, html {
 }
 
 #panel3 .row {
-  flex: 1;
   display: flex;
-  align-items: center; /* Center items vertically */
-  justify-content: space-around; /* Distribute items evenly */
+  flex-direction: column; /* Stack items vertically */
+  align-items: flex-start; /* Align items to the left */
   padding: 10px; /* Add padding for spacing */
   box-sizing: border-box; /* Include padding in width calculation */
 }
 
 #panel3 .row:nth-child(2) {
+  flex-direction: row;
   justify-content: space-evenly; /* Distribute buttons evenly */
-}
-
-#panel3 .row:nth-child(3) {
-  justify-content: flex-start; /* Align items to the left */
 }
 
 #panel2 {
@@ -153,4 +149,26 @@ body, html {
   border-radius: 15px; /* Rounded corners for Firefox */
   transition: width 0.25s; /* Smooth transition for progress */
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2); /* Shadow for progress */
+}
+
+.label-container {
+  display: flex;
+  flex-direction: row; /* Align labels horizontally */
+  align-items: center; /* Center align labels vertically */
+  margin-top: 10px; /* Add some space above the labels */
+  width: 100%; /* Full width */
+  justify-content: space-between; /* Distribute space between labels */
+  white-space: nowrap; /* Prevent wrapping */
+}
+
+#progressLabel, #stateLabel {
+  margin: 0 5px; /* Add some horizontal space between labels */
+}
+
+#stateLabel {
+  text-align: left; /* Align text to the left */
+}
+
+#progressLabel {
+  text-align: right; /* Align text to the right */
 }

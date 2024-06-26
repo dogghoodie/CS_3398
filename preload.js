@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   getCore: () => ipcRenderer.invoke('get-core'),
   getCoreState: () => ipcRenderer.invoke('get-core-state'),
   getCorePercents: () => ipcRenderer.invoke('get-core-percents'),
+  getCoreOutputPath: () => ipcRenderer.invoke('get-core-outputpath'),
   printCore: () => ipcRenderer.invoke('print-core'),
   setCore: (newCore) => ipcRenderer.invoke('set-core', newCore),
   getStats: (filePath) => ipcRenderer.invoke('get-stats', filePath),

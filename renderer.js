@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   locationInput.value = `/output/`;
   fileNameInput.value = `${getCurrentDateTime()}.mp4`;
   defaultOutputPath = locationInput.value + fileNameInput.value;
+  progressLabel.textContent = "0%";
 
   // Declare Core variable in the proper scope
   let Core;
@@ -79,13 +80,14 @@ document.addEventListener('DOMContentLoaded', () => {
     while (Core.state !== "idle" && Core.state !== "cancelled") {
       // Update Core state and percentages
       Core.state = await window.api.getCoreState();
+      // Core.outputPath = await window.api.getCoreOutputPath();
       const percentages = await window.api.getCorePercents();
 
       Core.percentageEncode = percentages.percentageEncode;
       Core.percentageConcat = percentages.percentageConcat;
 
       // contextualized percentage progress
-      // encoding takes about 80% of run time and concat 20%
+      // encoding takes about 60% of run time and concat 40%
       // weighting the percentage progress values to display
       // progress more accurately as a whole. 
       encodePercentContext = parseFloat((Core.percentageEncode * 0.6).toFixed(2));
@@ -93,12 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // update state label
       if (Core.state == "running-encode") {
-        stateLabel.textContent = "encode";
+        stateLabel.textContent = "State: Encoding";
       } else if (Core.state == "running-concat") {
         if (Core.percentageConcat == 100) {
-          stateLabel.textContent = "complete";
+          stateLabel.textContent = "State: Complete";
+          progressLabel.textContent = `Exported to: ${Core.outputPath}`;
         } else {
-          stateLabel.textContent = "concat";
+          stateLabel.textContent = "State: Concatenating";
         }
       }
   
@@ -125,9 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   
     // Reset progress bar when Core state is idle
-    if (stateLabel.textContent == "complete") {
+    if (stateLabel.textContent == "State: Complete") {
       progressBar.value = 100;
-    } else if (stateLabel.textContent == "cancelled") {
+    } else if (stateLabel.textContent == "State: Cancelled") {
       progressBar.value = 0;
     }
 
@@ -162,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Core.percentageEncode = 0;
         progressBar.value = 0;
         progressLabel.textContent = `${Core.percentageEncode}`;
-        stateLabel.textContent = "initializing";
+        stateLabel.textContent = "State: Initializing";
 
         await updateCore({ state: Core.state });
         // Start the progress loop
@@ -175,10 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error(error);
       }
       if (Core.state == "idle") {
-        stateLabel.textContent = "complete";
-        progressLabel.textContent = "100%";
+        stateLabel.textContent = "State: Complete";
+        progressLabel.textContent = `Exported to: ${Core.outputPath}`;
       } else if (Core.state == "cancelled") {
-        stateLabel.textContent = "cancelled";
+        stateLabel.textContent = "State: Cancelled";
         progressLabel.textContent = "0%";
         Core.state = "idle";
         await updateCore({ state: Core.state});
@@ -199,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
           console.log('Cancellation success!');
           Core.state = "cancelled";
           await updateCore({ state: Core.state});
-          stateLabel.textContent = "cancelled"
+          stateLabel.textContent = "State: Cancelled"
           progressLabel.textContent = "0%";
           // Additional logic if needed on successful cancellation
         } else {
