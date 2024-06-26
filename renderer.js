@@ -88,8 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // encoding takes about 80% of run time and concat 20%
       // weighting the percentage progress values to display
       // progress more accurately as a whole. 
-      encodePercentContext = parseFloat((Core.percentageEncode * 0.8).toFixed(2));
-      concatPercentContext = parseFloat((Core.percentageConcat * 0.2).toFixed(2));
+      encodePercentContext = parseFloat((Core.percentageEncode * 0.6).toFixed(2));
+      concatPercentContext = parseFloat((Core.percentageConcat * 0.4).toFixed(2));
 
       // update state label
       if (Core.state == "running-encode") {
@@ -158,6 +158,12 @@ document.addEventListener('DOMContentLoaded', () => {
   
       try {
         Core.state = "running-encode";
+        Core.percentageConcat = 0;
+        Core.percentageEncode = 0;
+        progressBar.value = 0;
+        progressLabel.textContent = `${Core.percentageEncode}`;
+        stateLabel.textContent = "initializing";
+
         await updateCore({ state: Core.state });
         // Start the progress loop
         progressLoop();
