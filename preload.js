@@ -2,16 +2,16 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   getAuthToken: () => ipcRenderer.invoke('get-auth-token'),
-  concatVideos: (token, files, outputPath) => ipcRenderer.invoke('concat-videos', files, outputPath),
-  queryFiles: (token, dirPath, formats) => ipcRenderer.invoke('query-files', dirPath, formats),
-  getCore: (token) => ipcRenderer.invoke('get-core'),
-  getCoreState: (token) => ipcRenderer.invoke('get-core-state'),
-  getCorePercents: (token) => ipcRenderer.invoke('get-core-percents'),
-  getCoreOutputPath: (token) => ipcRenderer.invoke('get-core-outputpath'),
+  concatVideos: (token, files, outputPath) => ipcRenderer.invoke('concat-videos', token, files, outputPath),
+  queryFiles: (token, dirPath, formats) => ipcRenderer.invoke('query-files', token, dirPath, formats),
+  getCore: (token) => ipcRenderer.invoke('get-core', token),
+  getCoreState: (token) => ipcRenderer.invoke('get-core-state', token),
+  getCorePercents: (token) => ipcRenderer.invoke('get-core-percents', token),
+  getCoreOutputPath: (token) => ipcRenderer.invoke('get-core-outputpath', token),
   printCore: (token) => ipcRenderer.invoke('print-core'),
-  setCore: (token, newCore) => ipcRenderer.invoke('set-core', newCore),
-  getStats: (token, filePath) => ipcRenderer.invoke('get-stats', filePath),
-  selectFile: (token) => ipcRenderer.invoke('select-file'),
-  selectFolder: (token) => ipcRenderer.invoke('select-folder'),
-  cancelConcat: (token) => ipcRenderer.invoke('cancel-concat') // Add cancelConcat function
+  setCore: (token, newCore) => ipcRenderer.invoke('set-core', newCore, token),
+  getStats: (token, filePath) => ipcRenderer.invoke('get-stats', filePath, token),
+  selectFile: (token) => ipcRenderer.invoke('select-file', token),
+  selectFolder: (token) => ipcRenderer.invoke('select-folder', token),
+  cancelConcat: (token) => ipcRenderer.invoke('cancel-concat', token) // Add cancelConcat function
 });
