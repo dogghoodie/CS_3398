@@ -122,6 +122,19 @@ body, html {
   opacity: 0.5;
 }
 
+.location-input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  box-sizing: border-box;
+  height: 20px; /* Match the height of the input box */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 #progressBar {
   width: 100%;
   height: 30px; /* Increased height for more girth */
