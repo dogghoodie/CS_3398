@@ -4,18 +4,48 @@ document.addEventListener('DOMContentLoaded', () => {
   const panel2 = document.getElementById('panel2'); 
   const panel3 = document.getElementById('panel3');
   
-  const setOutputPathButton = document.getElementById('setOutputPathButton');
-  const outputPathInput = document.getElementById('outputPathInput');
+  const fileNameInput = document.getElementById('fileNameInput');
+  const locationInput = document.getElementById('locationInput');
   const runButton = document.getElementById('runButton');
+  const cancelButton = document.getElementById('cancelButton');
+  const debugButton = document.getElementById('debugButton');
   const selectFileButton = document.getElementById('selectFileButton');
   const selectFolderButton = document.getElementById('selectFolderButton');
+  const progressBar = document.getElementById('progressBar');
+  const stateLabel = document.getElementById('stateLabel');
+  const progressLabel = document.getElementById('progressLabel');
+  const browseButton = document.getElementById('browseButton');
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   // prevents output path text box from being able to detect drag and drop for files
   // without this, dropping a file in that text box immediately plays the video in a new window
-  outputPathInput.addEventListener('dragenter', preventDefaultBehavior);
-  outputPathInput.addEventListener('dragover', preventDefaultBehavior);
-  outputPathInput.addEventListener('dragleave', preventDefaultBehavior);
-  outputPathInput.addEventListener('drop', preventDefaultBehavior);
+  fileNameInput.addEventListener('dragenter', preventDefaultBehavior);
+  fileNameInput.addEventListener('dragover', preventDefaultBehavior);
+  fileNameInput.addEventListener('dragleave', preventDefaultBehavior);
+  fileNameInput.addEventListener('drop', preventDefaultBehavior);
+  locationInput.addEventListener('dragenter', preventDefaultBehavior);
+  locationInput.addEventListener('dragover', preventDefaultBehavior);
+  locationInput.addEventListener('dragleave', preventDefaultBehavior);
+  locationInput.addEventListener('drop', preventDefaultBehavior);
+
+  // start by using $dateTime as default output value for .mp4
+  function getCurrentDateTime() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}${month}${day}_${hours}${minutes}${seconds}`;
+  }
+
+  // set output defaults
+  locationInput.value = `/output/`;
+  fileNameInput.value = `${getCurrentDateTime()}.mp4`;
+  defaultOutputPath = locationInput.value + fileNameInput.value;
+  progressLabel.textContent = "0%";
 
   // Declare Core variable in the proper scope
   let Core;
@@ -25,6 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       Core = await window.api.getCore();
       console.log('Initial Core in Renderer.js:', Core);
+      Core.outputPath = defaultOutputPath;
+      updateCore({outputPath: Core.outputPath});
       updateOrderedList();
     } catch (error) {
       console.error('Error initializing Core:', error.message);
@@ -46,37 +78,173 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOrderedList();
   }
 
-  // PANEL 3: Handle output path button event
-  setOutputPathButton.addEventListener('click', async () => {
-    const outputPath = outputPathInput.value;
-    if (outputPath) {
-      await updateCore({ outputPath: outputPath });
-      console.log('Output path set to:', outputPath);
-    } else {
-      console.error('Output path is empty');
+  async function progressLoop() {
+    console.log("Progress Loop started.");
+    while (Core.state !== "idle" && Core.state !== "cancelled") {
+      // Update Core state and percentages
+      Core.state = await window.api.getCoreState();
+      // Core.outputPath = await window.api.getCoreOutputPath();
+      const percentages = await window.api.getCorePercents();
+
+      Core.percentageEncode = percentages.percentageEncode;
+      Core.percentageConcat = percentages.percentageConcat;
+
+      // contextualized percentage progress
+      // encoding takes about 60% of run time and concat 40%
+      // weighting the percentage progress values to display
+      // progress more accurately as a whole. 
+      encodePercentContext = parseFloat((Core.percentageEncode * 0.6).toFixed(2));
+      concatPercentContext = parseFloat((Core.percentageConcat * 0.4).toFixed(2));
+
+      // update state label
+      if (Core.state == "running-encode") {
+        stateLabel.textContent = "State: Encoding";
+      } else if (Core.state == "running-concat") {
+        if (Core.percentageConcat == 100) {
+          stateLabel.textContent = "State: Complete";
+          progressLabel.textContent = `Exported to: ${Core.outputPath}`;
+        } else {
+          stateLabel.textContent = "State: Concatenating";
+        }
+      }
+  
+      // Ensure the progress values are finite numbers
+      if (Core.state == "running-encode") {
+        console.log("entered ProgressLoop running-encode");
+        if (Core.percentageEncode >= 0) {
+          if (encodePercentContext > progressBar.value) {
+            progressBar.value = encodePercentContext;
+            progressLabel.textContent = `${encodePercentContext}%`;
+          }
+        }
+        console.log("Progress bar value: ", progressBar.value);
+      } else if (Core.state == "running-concat") {
+        if (Core.percentageConcat >= 0) {
+          progressBar.value = parseFloat((encodePercentContext + concatPercentContext).toFixed(2));
+          progressLabel.textContent = `${progressBar.value}%`;
+        }
+        console.log("Progress bar value: ", progressBar.value);
+      }
+  
+      // Wait for a short delay before the next iteration
+      await delay(100);
     }
-  });
+  
+    // Reset progress bar when Core state is idle
+    if (stateLabel.textContent == "State: Complete") {
+      progressBar.value = 100;
+    } else if (stateLabel.textContent == "State: Cancelled") {
+      progressBar.value = 0;
+    }
+
+    console.log("Exiting progress loop");
+    
+  }
+
+  // Panel 3: Browse Button press
+  browseButton.addEventListener('click', async () => {
+    try {
+      const folder = await window.api.selectFolder();
+      if (folder) {
+        locationInput.value = folder;
+      }
+    } catch (error) {
+      console.error('Error selecting folder:', error.message);
+    }
+  })
 
   // PANEL 3: Handle runButton press
   runButton.addEventListener('click', async () => {
-    const files = Core.fileList;
-    const outputPath = Core.outputPath;
+    if (Core.state !== "running-encode" && Core.state !== "running-concat") {
+      const files = Core.fileList;
+      const outputPath = locationInput.value + fileNameInput.value;
+      Core.outputPath = outputPath;
+  
+      console.log(`Files: ${JSON.stringify(files)}`);
+      console.log(`Output path: ${outputPath}`);
+  
+      if (!outputPath) {
+        console.error('Output path is not set');
+        return;
+      }
 
-    console.log('Files: ${JSON.stringify(files)}');
-    console.log('Output path: #{outputPath}');
+      if (files.length < 2) {
+        console.error('Not enough files defined');
+        alert("Less than two filepaths defined!");
+        return;
+      }
+  
+      try {
+        Core.state = "running-encode";
+        Core.percentageConcat = 0;
+        Core.percentageEncode = 0;
+        progressBar.value = 0;
+        progressLabel.textContent = `${Core.percentageEncode}%`;
+        stateLabel.textContent = "State: Initializing";
 
-    if (!outputPath) {
-      console.error('Output path is not set');
-      return;
-    }
-
-    try {
-      const result = await window.api.concatVideos(files, outputPath);
-      console.log(result);
-    } catch (error) {
-      console.error(error);
+        await updateCore({ state: Core.state });
+        // Start the progress loop
+        progressLoop();
+        const result = await window.api.concatVideos(files, outputPath);
+        console.log(result);
+        Core.state = await window.api.getCoreState();
+        console.log("Core State (Renderer): ", Core.state);
+      } catch (error) {
+        console.error(error);
+      }
+      if (Core.state == "idle") {
+        stateLabel.textContent = "State: Complete";
+        if (Core.outputPath.startsWith('C:\\') || Core.outputPath.startsWith('~')) {
+          progressLabel.textContent = `Exported to: ${Core.outputPath}`;
+        } else {
+          progressLabel.textContent = `Exported to: ...${Core.outputPath}`;
+        }
+        
+      } else if (Core.state == "cancelled") {
+        stateLabel.textContent = "State: Cancelled";
+        progressLabel.textContent = "0%";
+        Core.state = "idle";
+        await updateCore({ state: Core.state});
+      }
+    } else {
+      alert("vidCat already running!");
     }
   });
+
+  // PANEL 3: Handle cancelButton press
+  cancelButton.addEventListener('click', async () => {
+    console.log("cancelButton eventListener called");
+    if (Core.state == 'running-encode' || Core.state == 'running-concat') {
+      console.log('Cancel button pressed during "running"');
+      try {
+        const cancel = await window.api.cancelConcat();
+        if (cancel) {
+          console.log('Cancellation success!');
+          Core.state = "cancelled";
+          await updateCore({ state: Core.state});
+          stateLabel.textContent = "State: Cancelled"
+          progressLabel.textContent = "0%";
+          // Additional logic if needed on successful cancellation
+        } else {
+          console.error('Cancel failed!');
+        }
+      } catch (error) {
+        console.error('Error during cancellation:', error.message);
+      }
+    } else {
+      console.log('Cancel button pressed while not "running"');
+    }
+    Core = await window.api.getCore();
+  });
+
+  // Panel 3 debug button for testing
+  debugButton.addEventListener('click', async () => {
+    console.log("Core in Renderer: ", Core);
+    console.log("fileNameInput: ", fileNameInput.value);
+    console.log("locationInput: ", locationInput.value);
+    await window.api.printCore();
+  });
+
 
   //* **************************************** *//
   //         PANEL 1: DRAG AND DROP AREA        //
@@ -110,10 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const filePath = files[i].path;
         try {
           const stats = await window.api.getStats(filePath);
-
-          console.log(stats);
-          console.log("panel 1 drop: isDir? ", stats.isDirectory);
-          console.log("panel 1 drop: isFile? ", stats.isFile);
 
           if (stats.isDirectory) {
             // If it's a directory, query all files in the directory

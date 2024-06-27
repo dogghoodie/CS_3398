@@ -4,6 +4,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');                     // needed to query file system
+const { homedir } = require('os');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
@@ -18,13 +19,15 @@ let Core = {
   state: "idle",
   fileList: [],
   outputPath: "",
-  percentage: 0
+  percentageEncode: 0,
+  percentageConcat: 0,
+  ffmpegProcess: null, // Store the ffmpeg encode here
+  encodingProcesses: [],
 };
 
 //* **************************************** *//
 //             WINDOW LAUNCH                  //
 //* **************************************** *//
-
 
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
@@ -112,6 +115,74 @@ function getAllFiles(dirPath, formats, arrayOfFiles) {
   return arrayOfFiles;
 }
 
+// sleep
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// resolve homeDir
+function resolveHome(filepath) {
+  if (filepath.startsWith('~')) {
+    return path.join(homedir(), filepath.slice(1));
+  }
+  return filepath;
+}
+
+// resolve Relative Path
+function resolveRelativePath(filepath) {
+  if (filepath.startsWith('/')) {
+    const resolvedPath = path.resolve(process.cwd(), `.${filepath}`);
+    const directory = path.dirname(resolvedPath);
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory, { recursive: true });
+    }
+    return resolvedPath;
+  }
+  return filepath;
+}
+
+// ensure directory existence
+function ensureDirectoryExistence(filePath) {
+  const dirname = path.dirname(filePath);
+  if (fs.existsSync(dirname)) {
+    return true;
+  }
+  ensureDirectoryExistence(dirname);
+  fs.mkdirSync(dirname);
+}
+
+
+// try to delete a given file repeatedly
+async function deleteFileWithRetry(filePath, retries = 5, delay = 500) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log("tempDirCleanup: attempting delete of: ", filePath);
+      fs.unlinkSync(filePath);
+      return;
+    } catch (err) {
+      if (err.code === 'EBUSY' && i < retries - 1) {
+        console.warn(`File ${filePath} is busy, retrying in ${delay}ms...`);
+        await sleep(delay);
+      } else {
+        console.error(`Error deleting file ${filePath}: ${err.message}`);
+        return;
+      }
+    }
+  }
+}
+
+// clean up temp dir
+async function cleanUpTempDir() {
+  const tempDir = path.resolve('./tempDir');
+  if (fs.existsSync(tempDir)) {
+    const files = fs.readdirSync(tempDir);
+    for (const file of files) {
+      const filePath = path.join(tempDir, file);
+      await deleteFileWithRetry(filePath);
+    }
+  }
+}
+
 //* **************************************** *//
 //                IPC ROUTES                  //
 //* **************************************** *//
@@ -136,6 +207,31 @@ ipcMain.handle('get-core', async () => {
   return Core;
 });
 
+// get-core-state
+// Renderer.js -> IPC.get-core-state()
+// Reads only the state of "Core" from main.
+// Necessary because get-core cannot return complex properties like encoded files
+ipcMain.handle('get-core-state', async () => {
+  return Core.state;
+});
+
+// get-core-percents
+// Renderer.js -> IPC.get-core-percents()
+// Reads the percents of "Core" from main.
+ipcMain.handle('get-core-percents', async () => {
+  return {
+    percentageEncode: Core.percentageEncode,
+    percentageConcat: Core.percentageConcat
+  };
+});
+
+// get-core-outputPath
+// Renderer.js -> IPC.get-core-outputpath()
+// Reads the (likely disambiguated) output path from main
+ipcMain.handle('get-core-outputpath', async () => {
+  return Core.outputPath;
+});
+
 // set-core
 // Renderer.js -> IPC.set-core() -> main.js.Core
 // writes status of Core struct from renderer.js to main.js
@@ -150,18 +246,7 @@ ipcMain.handle('set-core', async (event, newCore) => {
 ipcMain.handle('get-stats', async (event, filePath) => {
   try {
     const stats = fs.statSync(filePath);
-    console.log(stats);
-    console.log(stats.isDirectory());
-    console.log(stats.isFile());
     return {
-
-      /*
-        for some reason, I can return the stats object, but
-        it doesn't keep the methods associated with that object
-        when I try to call it in renderer.js. So for now I'm
-        only returning the necessary properties.
-      */
-
       isDirectory: stats.isDirectory(),
       isFile: stats.isFile(),
     };
@@ -173,17 +258,26 @@ ipcMain.handle('get-stats', async (event, filePath) => {
 // concat-videos
 // Renderer.js.Panel3 -> IPC.concat-videos() -> ffmpeg
 // Calls ffmpeg concat execution
-ipcMain.handle('concat-videos', async (event, files, outputPath) => {
-  return new Promise((resolve, reject) => {
-    // concatenation of 2 files
-    //ffmpeg()
-      //.input(file1)
-      //.input(file2)
-      //.on('end', () => resolve('Video concatenation completed'))
-      //.on('error', (err) => reject(`Error: ${err.message}`))
-      //.mergeToFile(output, './tempDir');
 
-    // concatenation of multiple files
+ipcMain.handle('concat-videos', async (event, files, outputPath) => {
+  // Variables to store progress information
+  let encodeProgress = {}; // Object to store encoding progress
+  let concatProgress = {}; // Object to store concatenation progress
+
+  // Handle ambiguous filepath
+  if (Core.outputPath.startsWith('~')) {
+    Core.outputPath = resolveHome(Core.outputPath);
+  } else if (Core.outputPath.startsWith('/')) {
+    Core.outputPath = resolveRelativePath(Core.outputPath);
+  }
+
+  // if folder for output doesn't exist, create it
+  ensureDirectoryExistence(Core.outputPath);
+  
+  outputPath = Core.outputPath;
+  console.log("Disambiguated outputPath:", Core.outputPath);
+
+  return new Promise((resolve, reject) => {
     console.log('Files:', files);
     console.log('Output Path:', outputPath);
 
@@ -201,21 +295,127 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
       }
     });
 
-    if(!fs.existsSync('./tempDir')) {
-      fs.mkdirSync('./tempDir')
+    if (!fs.existsSync('./tempDir')) {
+      fs.mkdirSync('./tempDir');
     }
 
-    const command = ffmpeg();
+    const encodedFiles = files.map((file, index) => path.join('./tempDir', `encoded${index}.mp4`));
+    
+    // Re-encode all files to the same format and resolution
+    const encodeFile = (file, index) => {
+      return new Promise((resolve, reject) => {
+        const process = ffmpeg(file)
+          .outputOptions([
+            '-c:v libx264',
+            '-c:a aac',
+            '-b:a 192k',
+            '-s 1280x720' // Adjust resolution as needed
+          ])
+          .on('progress', progress => {
+            if (progress.percent !== undefined) {
+              encodeProgress[index] = { percent: (progress.percent).toFixed(2) };
+              // console.log(encodeProgress[index]);
+              Core.percentageEncode = encodeProgress[index].percent;
+              console.log("Core percent Encode: ", Core.percentageEncode, "%");
+            }
+          })
+          .on('end', () => {
+            console.log(`Encoding complete for file: ${file}`);
+            Core.encodingProcesses[index] = null;
+            resolve(encodedFiles[index]);
+          })
+          .on('error', (err) => {
+            console.error(`Error encoding ${file}: ${err.message}`);
+            Core.encodingProcesses[index] = null;
+            reject(`Error encoding ${file}: ${err.message}`);
+          })
+          .save(encodedFiles[index]);
 
-    files.forEach(file => {
-      command.input(file);
-    });
+        // Store the ffmpeg process for later cancellation
+        Core.ffmpegProcess = process;
+        Core.encodingProcesses[index] = process;
+      });
+    };
 
-    command
-      .on('end', () => resolve('vidCat Complete!'))
-      .on('error', (err) => reject(`Error: ${err.message}`))
-      .mergeToFile(outputPath, './tempDir')
+    // Encode all files sequentially
+    Promise.all(files.map((file, index) => encodeFile(file, index)))
+      .then(() => {
+        const command = ffmpeg();
+
+        encodedFiles.forEach(file => {
+          command.input(file);
+        });
+
+        // Create the filter_complex string for concatenation
+        const filterComplex = encodedFiles.map((_, index) => `[${index}:v][${index}:a]`).join('') + `concat=n=${encodedFiles.length}:v=1:a=1[outv][outa]`;
+
+        command
+          .complexFilter(filterComplex)
+          .outputOptions('-map', '[outv]', '-map', '[outa]')
+          .on('progress', progress => {
+            if (progress.percent !== undefined) {
+              concatProgress = { percent: (progress.percent / encodedFiles.length).toFixed(2) }; // Update concat progress
+              Core.state = "running-concat";
+              Core.percentageConcat = concatProgress.percent;
+              console.log("Core percent Concat: ", Core.percentageConcat, "%");
+            }
+          })
+          .on('end', () => {
+            Core.state = "idle";
+            Core.encodingProcesses = [];
+            Core.ffmpegProcess = null;
+            console.log(`Concatenation complete for file`);
+            console.log("File written to: ", Core.outputPath);
+            console.log("Core State (Main): ", Core.state);
+            cleanUpTempDir();
+            resolve('vidCat Complete!');
+          })
+          .on('error', (err) => {
+            cleanUpTempDir();
+            console.log(`Concatenation error for file`);
+            reject(`Error: ${err.message}`);
+          })
+          .save(outputPath);
+
+        // Store the ffmpeg process for later cancellation
+        Core.ffmpegProcess = command;
+
+        // Listen for SIGINT signal to cancel the ffmpeg process
+        process.on('SIGINT', () => {
+          if (Core.ffmpegProcess) {
+            Core.ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
+            Core.ffmpegProcess = null; // Clear the ffmpeg process
+          }
+        });
+      })
+      .catch(err => reject(err));
   });
+});
+
+// Cancel video concatenation
+ipcMain.handle('cancel-concat', async () => {
+  console.log("cancel-concat called");
+  Core.state = "cancelled";
+
+  // Cancel all encoding processes
+  Core.encodingProcesses.forEach(process => {
+    if (process) {
+      process.kill('SIGINT');
+    }
+  });
+
+  // Cancel concatenation process
+  if (Core.ffmpegProcess) {
+    Core.ffmpegProcess.kill('SIGINT'); // Send SIGINT to terminate the process
+    Core.ffmpegProcess = null; // Clear the ffmpeg process
+  }
+
+  sleep(1000);
+  Core.encodingProcesses = [];
+  Core.percentageEncode = 0;
+  Core.percentageConcat = 0;
+  cleanUpTempDir();
+  return 'FFmpeg process cancelled';
 });
 
 // select-file
@@ -251,4 +451,10 @@ ipcMain.handle('select-folder', async () => {
     return result.filePaths[0];
   }
 
+})
+
+// print core
+// Renderer.js.Panel3.DebugButton -> IPC.print-core() -> output to console
+ipcMain.handle('print-core', async() => {
+  console.log("main core: ", Core);
 })
