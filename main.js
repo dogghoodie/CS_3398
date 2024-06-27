@@ -8,6 +8,7 @@ const { homedir } = require('os');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
+const crypto = require('crypto');
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
@@ -15,6 +16,7 @@ ffmpeg.setFfprobePath(ffprobePath);
 //* **************************************** *//
 //                   CORE                     //
 //* **************************************** *//
+
 let Core = {
   state: "idle",
   fileList: [],
@@ -24,6 +26,22 @@ let Core = {
   ffmpegProcess: null, // Store the ffmpeg encode here
   encodingProcesses: [],
 };
+
+//* **************************************** *//
+//             IPC AUTH TOKEN                 //
+//* **************************************** *//
+
+let authTokens = new Set();
+
+function generateAuthToken() {
+  const token = crypto.randomBytes(32).toString('hex');
+  authTokens.add(token);
+  return token;
+}
+
+function isValidAuthToken(token) {
+  return authTokens.has(token);
+}
 
 //* **************************************** *//
 //             WINDOW LAUNCH                  //
@@ -190,7 +208,11 @@ async function cleanUpTempDir() {
 // query-files
 // Renderer.js.Panel1 -> IPC.query-files() -> main.js.getAllFiles()
 // calls getAllFiles() function, returns an array of strings. 
-ipcMain.handle('query-files', async (event, dirPath, formats) => {
+ipcMain.handle('query-files', async (event, token, dirPath, formats) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   try {
     const files = getAllFiles(dirPath, formats);
     return files;
@@ -202,7 +224,11 @@ ipcMain.handle('query-files', async (event, dirPath, formats) => {
 // get-core
 // Renderer.js -> IPC.get-core() -> main.js.Core
 // reads property "Core" from main. Returns Core object.
-ipcMain.handle('get-core', async () => {
+ipcMain.handle('get-core', async (event, token) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   console.log('Core in main process:', Core);
   return Core;
 });
@@ -211,14 +237,22 @@ ipcMain.handle('get-core', async () => {
 // Renderer.js -> IPC.get-core-state()
 // Reads only the state of "Core" from main.
 // Necessary because get-core cannot return complex properties like encoded files
-ipcMain.handle('get-core-state', async () => {
+ipcMain.handle('get-core-state', async (event, token) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   return Core.state;
 });
 
 // get-core-percents
 // Renderer.js -> IPC.get-core-percents()
 // Reads the percents of "Core" from main.
-ipcMain.handle('get-core-percents', async () => {
+ipcMain.handle('get-core-percents', async (event, token) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   return {
     percentageEncode: Core.percentageEncode,
     percentageConcat: Core.percentageConcat
@@ -228,14 +262,22 @@ ipcMain.handle('get-core-percents', async () => {
 // get-core-outputPath
 // Renderer.js -> IPC.get-core-outputpath()
 // Reads the (likely disambiguated) output path from main
-ipcMain.handle('get-core-outputpath', async () => {
+ipcMain.handle('get-core-outputpath', async (event, token) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   return Core.outputPath;
 });
 
 // set-core
 // Renderer.js -> IPC.set-core() -> main.js.Core
 // writes status of Core struct from renderer.js to main.js
-ipcMain.handle('set-core', async (event, newCore) => {
+ipcMain.handle('set-core', async (event, token, newCore) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   Core = { ...Core, ...newCore };
   console.log('Updated Core in main process:', Core);
 });
@@ -243,7 +285,11 @@ ipcMain.handle('set-core', async (event, newCore) => {
 // get-stats
 // Renderer.js.Panel1 -> IPC.get-stats() -> main.js()
 // renderer.js needs to us 'fs' library in order to read file properties
-ipcMain.handle('get-stats', async (event, filePath) => {
+ipcMain.handle('get-stats', async (event, token, filePath) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   try {
     const stats = fs.statSync(filePath);
     return {
@@ -259,7 +305,11 @@ ipcMain.handle('get-stats', async (event, filePath) => {
 // Renderer.js.Panel3 -> IPC.concat-videos() -> ffmpeg
 // Calls ffmpeg concat execution
 
-ipcMain.handle('concat-videos', async (event, files, outputPath) => {
+ipcMain.handle('concat-videos', async (event, token, files, outputPath) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   // Variables to store progress information
   let encodeProgress = {}; // Object to store encoding progress
   let concatProgress = {}; // Object to store concatenation progress
@@ -273,7 +323,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
 
   // if folder for output doesn't exist, create it
   ensureDirectoryExistence(Core.outputPath);
-  
+
   outputPath = Core.outputPath;
   console.log("Disambiguated outputPath:", Core.outputPath);
 
@@ -300,7 +350,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
     }
 
     const encodedFiles = files.map((file, index) => path.join('./tempDir', `encoded${index}.mp4`));
-    
+
     // Re-encode all files to the same format and resolution
     const encodeFile = (file, index) => {
       return new Promise((resolve, reject) => {
@@ -393,7 +443,11 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
 });
 
 // Cancel video concatenation
-ipcMain.handle('cancel-concat', async () => {
+ipcMain.handle('cancel-concat', async (event, token) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   console.log("cancel-concat called");
   Core.state = "cancelled";
 
@@ -421,7 +475,11 @@ ipcMain.handle('cancel-concat', async () => {
 // select-file
 // Renderer.js.Panel1 -> IPC.select-file()
 // opens windows file select dialogue
-ipcMain.handle('select-file', async () => {
+ipcMain.handle('select-file', async (event, token) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     filters: [
@@ -429,7 +487,7 @@ ipcMain.handle('select-file', async () => {
     ]
   });
 
-  if (result.canceled){
+  if (result.canceled) {
     return null;
   } else {
     return result.filePaths[0];
@@ -440,12 +498,16 @@ ipcMain.handle('select-file', async () => {
 // select-folder
 // Renderer.js.Panel1 -> IPC.select-folder()
 // opens windows file select dialogue
-ipcMain.handle('select-folder', async () => {
+ipcMain.handle('select-folder', async (event, token) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory']
   });
 
-  if (result.canceled){
+  if (result.canceled) {
     return null;
   } else {
     return result.filePaths[0];
@@ -455,6 +517,16 @@ ipcMain.handle('select-folder', async () => {
 
 // print core
 // Renderer.js.Panel3.DebugButton -> IPC.print-core() -> output to console
-ipcMain.handle('print-core', async() => {
+ipcMain.handle('print-core', async (event, token) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   console.log("main core: ", Core);
-})
+});
+
+ipcMain.handle('get-auth-token', async (event, token) => {
+  return generateAuthToken();
+});
+
+
