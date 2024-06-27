@@ -8,9 +8,9 @@ contextBridge.exposeInMainWorld('api', {
   getCoreState: (token) => ipcRenderer.invoke('get-core-state', token),
   getCorePercents: (token) => ipcRenderer.invoke('get-core-percents', token),
   getCoreOutputPath: (token) => ipcRenderer.invoke('get-core-outputpath', token),
-  printCore: (token) => ipcRenderer.invoke('print-core'),
-  setCore: (token, newCore) => ipcRenderer.invoke('set-core', newCore, token),
-  getStats: (token, filePath) => ipcRenderer.invoke('get-stats', filePath, token),
+  printCore: (token) => ipcRenderer.invoke('print-core', token),
+  setCore: (token, newCore) => ipcRenderer.invoke('set-core', token, newCore),
+  getStats: (token, filePath) => ipcRenderer.invoke('get-stats', token, filePath),
   selectFile: (token) => ipcRenderer.invoke('select-file', token),
   selectFolder: (token) => ipcRenderer.invoke('select-folder', token),
   cancelConcat: (token) => ipcRenderer.invoke('cancel-concat', token) // Add cancelConcat function
