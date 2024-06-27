@@ -141,6 +141,17 @@ function resolveRelativePath(filepath) {
   return filepath;
 }
 
+// ensure directory existence
+function ensureDirectoryExistence(filePath) {
+  const dirname = path.dirname(filePath);
+  if (fs.existsSync(dirname)) {
+    return true;
+  }
+  ensureDirectoryExistence(dirname);
+  fs.mkdirSync(dirname);
+}
+
+
 // try to delete a given file repeatedly
 async function deleteFileWithRetry(filePath, retries = 5, delay = 500) {
   for (let i = 0; i < retries; i++) {
@@ -254,7 +265,15 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   let concatProgress = {}; // Object to store concatenation progress
 
   // Handle ambiguous filepath
-  Core.outputPath = resolveRelativePath(Core.outputPath);
+  if (Core.outputPath.startsWith('~')) {
+    Core.outputPath = resolveHome(Core.outputPath);
+  } else if (Core.outputPath.startsWith('/')) {
+    Core.outputPath = resolveRelativePath(Core.outputPath);
+  }
+
+  // if folder for output doesn't exist, create it
+  ensureDirectoryExistence(Core.outputPath);
+  
   outputPath = Core.outputPath;
   console.log("Disambiguated outputPath:", Core.outputPath);
 

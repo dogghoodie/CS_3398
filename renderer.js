@@ -179,7 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (Core.state == "idle") {
         stateLabel.textContent = "State: Complete";
-        progressLabel.textContent = `Exported to: ${Core.outputPath}`;
+        if (Core.outputPath.startsWith('C:\\') || Core.outputPath.startsWith('~')) {
+          progressLabel.textContent = `Exported to: ${Core.outputPath}`;
+        } else {
+          progressLabel.textContent = `Exported to: ...${Core.outputPath}`;
+        }
+        
       } else if (Core.state == "cancelled") {
         stateLabel.textContent = "State: Cancelled";
         progressLabel.textContent = "0%";
