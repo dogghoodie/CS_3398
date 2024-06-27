@@ -316,7 +316,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
               encodeProgress[index] = { percent: (progress.percent).toFixed(2) };
               // console.log(encodeProgress[index]);
               Core.percentageEncode = encodeProgress[index].percent;
-              console.log("Core percent Encode: ", Core.percentageEncode);
+              console.log("Core percent Encode: ", Core.percentageEncode, "%");
             }
           })
           .on('end', () => {
@@ -357,7 +357,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
               concatProgress = { percent: (progress.percent / encodedFiles.length).toFixed(2) }; // Update concat progress
               Core.state = "running-concat";
               Core.percentageConcat = concatProgress.percent;
-              console.log(Core.percentageConcat);
+              console.log("Core percent Concat: ", Core.percentageConcat, "%");
             }
           })
           .on('end', () => {

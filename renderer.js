@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const progressBar = document.getElementById('progressBar');
   const stateLabel = document.getElementById('stateLabel');
   const progressLabel = document.getElementById('progressLabel');
+  const browseButton = document.getElementById('browseButton');
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -137,6 +138,18 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("Exiting progress loop");
     
   }
+
+  // Panel 3: Browse Button press
+  browseButton.addEventListener('click', async () => {
+    try {
+      const folder = await window.api.selectFolder();
+      if (folder) {
+        locationInput.value = folder;
+      }
+    } catch (error) {
+      console.error('Error selecting folder:', error.message);
+    }
+  })
 
   // PANEL 3: Handle runButton press
   runButton.addEventListener('click', async () => {
