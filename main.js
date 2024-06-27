@@ -82,8 +82,10 @@ function createMainWindow() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   createSplashWindow();
+  const token = generateAuthToken(); //token is generated in this 
+  splashWindow.webContents.send('set-auth-token', token);
   setTimeout(() => {
     if (splashWindow) {
       splashWindow.close();
