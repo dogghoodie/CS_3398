@@ -20,12 +20,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // prevents output path text box from being able to detect drag and drop for files
   // without this, dropping a file in that text box immediately plays the video in a new window
-  /*
-  outputPathInput.addEventListener('dragenter', preventDefaultBehavior);
-  outputPathInput.addEventListener('dragover', preventDefaultBehavior);
-  outputPathInput.addEventListener('dragleave', preventDefaultBehavior);
-  outputPathInput.addEventListener('drop', preventDefaultBehavior);
-  */
+  fileNameInput.addEventListener('dragenter', preventDefaultBehavior);
+  fileNameInput.addEventListener('dragover', preventDefaultBehavior);
+  fileNameInput.addEventListener('dragleave', preventDefaultBehavior);
+  fileNameInput.addEventListener('drop', preventDefaultBehavior);
+  locationInput.addEventListener('dragenter', preventDefaultBehavior);
+  locationInput.addEventListener('dragover', preventDefaultBehavior);
+  locationInput.addEventListener('dragleave', preventDefaultBehavior);
+  locationInput.addEventListener('drop', preventDefaultBehavior);
 
   // start by using $dateTime as default output value for .mp4
   function getCurrentDateTime() {
@@ -165,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Output path is not set');
         return;
       }
-  
+
       if (files.length < 2) {
         console.error('Not enough files defined');
         alert("Less than two filepaths defined!");
@@ -177,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Core.percentageConcat = 0;
         Core.percentageEncode = 0;
         progressBar.value = 0;
-        progressLabel.textContent = `${Core.percentageEncode}`;
+        progressLabel.textContent = `${Core.percentageEncode}%`;
         stateLabel.textContent = "State: Initializing";
 
         await updateCore({ state: Core.state });
@@ -238,6 +240,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Panel 3 debug button for testing
   debugButton.addEventListener('click', async () => {
     console.log("Core in Renderer: ", Core);
+    console.log("fileNameInput: ", fileNameInput.value);
+    console.log("locationInput: ", locationInput.value);
     await window.api.printCore();
   });
 
