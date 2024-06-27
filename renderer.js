@@ -1,3 +1,5 @@
+const { ipcRenderer } = require('electron');
+
 document.addEventListener('DOMContentLoaded', async () => {
   // BASELINE DECLARATIONS
   const panel1 = document.getElementById('panel1');
@@ -53,18 +55,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Declare auth-token variable in the proper scope
   let authToken;
 
-  async function getAuthToken() {
-    try {
-      authToken = await window.api.getAuthToken();
-      console.log('Auth Token:', authToken);
-    } catch (error) {
-      consoe.error('Error getting auth token:', error.message);
-    }
-  }
-
-  // Initialize auth-token and core
-  await getAuthToken();
-  await initializeCore();
+  ipcRenderer.on('set-auth-token', async (event, token) => {
+    authToken = token;
+    console.log('Auth-Token set in renderer:', authToken);
+    await initializeCore();
+  });
 
   // GET Core
   async function initializeCore() {
