@@ -526,6 +526,10 @@ ipcMain.handle('print-core', async (event, token) => {
 });
 
 ipcMain.handle('get-auth-token', async (event, token) => {
+  if (!isValidAuthToken(token)) {
+    throw new Error('Unauthorized');
+  }
+
   return generateAuthToken();
 });
 
