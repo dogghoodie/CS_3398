@@ -47,6 +47,9 @@ function isValidAuthToken(token) {
 //             WINDOW LAUNCH                  //
 //* **************************************** *//
 
+let splashWindow;
+let mainWindow;
+
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
     width: 800,
@@ -84,8 +87,11 @@ function createMainWindow() {
 
 app.whenReady().then(async () => {
   createSplashWindow();
-  const token = generateAuthToken(); //token is generated in this 
-  splashWindow.webContents.send('set-auth-token', token);
+  splashWindow.once('ready-to-show', () => {
+    const token = generateAuthToken(); //token is generated in this 
+    splashWindow.webContents.send('set-auth-token', token);
+    splashWindow.show();
+  });
   setTimeout(() => {
     if (splashWindow) {
       splashWindow.close();
