@@ -150,19 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
           locationInput.value = folder;
         }
         else {
-          const modal = document.getElementById('errorModal');
-          modal.style.display = 'block';
-  
-          // Close modal on clicking close button
-          const closeBtn = modal.querySelector('.close');
-          closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-          });
-
-          const okButton = modal.querySelector('#okButton');
-          okButton.addEventListener('click', () => {
-            modal.style.display = 'none';
-          });
+          showErrorModal("Cannot write to a protected directory");
         }
         
       }
@@ -320,22 +308,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error querying files:', error.message);
           }
         } else {
-          // Display error modal for protected directory access
-          const modal = document.getElementById('errorModal');
-          modal.style.display = 'block';
-  
-          // Close modal on clicking close button
-          const closeBtn = modal.querySelector('.close');
-          closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-          });
-
-          const okButton = modal.querySelector('#okButton');
-          okButton.addEventListener('click', () => {
-            modal.style.display = 'none';
-          });
+          showErrorModal("Cannot import file from a protected directory");
         }
-        
       }
     }
   });
@@ -364,6 +338,24 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     }
 
+    function showErrorModal(message){
+      const modal = document.getElementById('errorModal');
+      const messageElement = modal.querySelector('.modal-message');
+      messageElement.textContent = message;
+      modal.style.display = 'block';
+
+      // Close modal on clicking close button
+      const closeBtn = modal.querySelector('.close');
+      closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+
+      const okButton = modal.querySelector('#okButton');
+      okButton.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+    }
+
   // SELECT FILE BUTTON
   selectFileButton.addEventListener('click', async () => {
     try {
@@ -375,20 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
           await updateCore({ fileList: Core.fileList });
           updateOrderedList();
         } else {
-          // Display error modal for protected directory access
-          const modal = document.getElementById('errorModal');
-          modal.style.display = 'block';
-  
-          // Close modal on clicking close button
-          const closeBtn = modal.querySelector('.close');
-          closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-          });
-
-          const okButton = modal.querySelector('#okButton');
-          okButton.addEventListener('click', () => {
-            modal.style.display = 'none';
-          });
+          showErrorModal("Cannot import file from a protected directory")
         }
       }
     } catch (error) {
@@ -412,20 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
           await updateCore({ fileList: Core.fileList });
           updateOrderedList();
         } else {
-          // Display error modal for protected directory access
-          const modal = document.getElementById('errorModal');
-          modal.style.display = 'block';
-  
-          // Close modal on clicking close button
-          const closeBtn = modal.querySelector('.close');
-          closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-          });
-
-          const okButton = modal.querySelector('#okButton');
-          okButton.addEventListener('click', () => {
-            modal.style.display = 'none';
-          });
+          showErrorModal("Cannot import files from a protected directory")
         }
       }
     } catch (error) {
