@@ -146,7 +146,25 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const folder = await window.api.selectFolder();
       if (folder) {
-        locationInput.value = folder;
+        if (isPathSafe(folder)){
+          locationInput.value = folder;
+        }
+        else {
+          const modal = document.getElementById('errorModal');
+          modal.style.display = 'block';
+  
+          // Close modal on clicking close button
+          const closeBtn = modal.querySelector('.close');
+          closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+          });
+
+          const okButton = modal.querySelector('#okButton');
+          okButton.addEventListener('click', () => {
+            modal.style.display = 'none';
+          });
+        }
+        
       }
     } catch (error) {
       console.error('Error selecting folder:', error.message);
@@ -276,60 +294,139 @@ document.addEventListener('DOMContentLoaded', () => {
     if (files.length > 0) {
       for (let i = 0; i < files.length; i++) {
         const filePath = files[i].path;
-        try {
-          const stats = await window.api.getStats(filePath);
 
-          if (stats.isDirectory) {
-            // If it's a directory, query all files in the directory
-            const newFiles = await window.api.queryFiles(filePath, ['.mp4']); // Adjust formats as needed
-            newFiles.forEach(file => {
-              if (!Core.fileList.includes(file)) { // Avoid duplicate entries
-                Core.fileList.push(file);
+        if (isPathSafe(filePath)){
+          try {
+            const stats = await window.api.getStats(filePath);
+  
+            if (stats.isDirectory) {
+              // If it's a directory, query all files in the directory
+              const newFiles = await window.api.queryFiles(filePath, ['.mp4']); // Adjust formats as needed
+              newFiles.forEach(file => {
+                if (!Core.fileList.includes(file)) { // Avoid duplicate entries
+                  Core.fileList.push(file);
+                }
+              });
+            } else if (stats.isFile) {
+              // If it's a file, directly add the file to Core.fileList
+              if (!Core.fileList.includes(filePath)) { // Avoid duplicate entries
+                Core.fileList.push(filePath);
               }
-            });
-          } else if (stats.isFile) {
-            // If it's a file, directly add the file to Core.fileList
-            if (!Core.fileList.includes(filePath)) { // Avoid duplicate entries
-              Core.fileList.push(filePath);
             }
+  
+            await updateCore({ fileList: Core.fileList });
+            updateOrderedList();    // update Panel 2
+          } catch (error) {
+            console.error('Error querying files:', error.message);
           }
+        } else {
+          // Display error modal for protected directory access
+          const modal = document.getElementById('errorModal');
+          modal.style.display = 'block';
+  
+          // Close modal on clicking close button
+          const closeBtn = modal.querySelector('.close');
+          closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+          });
 
-          await updateCore({ fileList: Core.fileList });
-          updateOrderedList();    // update Panel 2
-        } catch (error) {
-          console.error('Error querying files:', error.message);
+          const okButton = modal.querySelector('#okButton');
+          okButton.addEventListener('click', () => {
+            modal.style.display = 'none';
+          });
         }
+        
       }
     }
   });
+
+  const protectedDirectories = [
+    "\\",
+    "C:\\Windows",
+    "C:\\Recovery",
+    "C:\\Program Files",
+    "C:\\Program Files (x86)",
+    "C:\\AMD",
+    "C:\\Nvidia",
+    "/System",
+    "/Library"
+    ]
+
+    function isPathSafe(filePath) {
+      // Check if the filePath starts with any protected directory
+      if (protectedDirectories.some(dir => filePath.startsWith(dir))) {
+        return false;
+      }
+      // Additional check to prevent selecting C drive
+      if (filePath === "C:\\") {
+        return false;
+      }
+      return true;
+    }
 
   // SELECT FILE BUTTON
   selectFileButton.addEventListener('click', async () => {
     try {
       const file = await window.api.selectFile();
       if (file) {
-        Core.fileList.push(file);
-        await updateCore({ fileList: Core.fileList });
-        updateOrderedList();
+        console.log("Selected file:", file);
+        if (isPathSafe(file)) {
+          Core.fileList.push(file);
+          await updateCore({ fileList: Core.fileList });
+          updateOrderedList();
+        } else {
+          // Display error modal for protected directory access
+          const modal = document.getElementById('errorModal');
+          modal.style.display = 'block';
+  
+          // Close modal on clicking close button
+          const closeBtn = modal.querySelector('.close');
+          closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+          });
+
+          const okButton = modal.querySelector('#okButton');
+          okButton.addEventListener('click', () => {
+            modal.style.display = 'none';
+          });
+        }
       }
-    } catch (error){
+    } catch (error) {
       console.error('Error selecting file:', error.message);
     }
-  })
+  });
 
   // SELECT FOLDER BUTTON
   selectFolderButton.addEventListener('click', async () => {
     try {
       const folder = await window.api.selectFolder();
       if (folder){
-        const newFiles = await window.api.queryFiles(folder, ['.mp4']);
-        newFiles.forEach(file => {
+        console.log("Selected folder: ", folder);
+        if (isPathSafe(folder)){
+          const newFiles = await window.api.queryFiles(folder, ['.mp4']);
+          newFiles.forEach(file => {
           if (!Core.fileList.includes(file)){
             Core.fileList.push(file);
           }
-        });
-        await updateCore({ fileList: Core.fileList });
-        updateOrderedList();
+          });
+          await updateCore({ fileList: Core.fileList });
+          updateOrderedList();
+        } else {
+          // Display error modal for protected directory access
+          const modal = document.getElementById('errorModal');
+          modal.style.display = 'block';
+  
+          // Close modal on clicking close button
+          const closeBtn = modal.querySelector('.close');
+          closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+          });
+
+          const okButton = modal.querySelector('#okButton');
+          okButton.addEventListener('click', () => {
+            modal.style.display = 'none';
+          });
+        }
       }
     } catch (error) {
       console.error('Error selecting folder:', error.message);
