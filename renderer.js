@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const stateLabel = document.getElementById('stateLabel');
   const progressLabel = document.getElementById('progressLabel');
   const browseButton = document.getElementById('browseButton');
+  const modal = document.getElementById ('errorModal');
+  modal.style.display = 'none';
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -436,11 +438,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // create string for item name to parse
       const itemName = document.createElement('span');
       itemName.classList.add('item-name');
-      const displayPath = filePath.replace(/^.*[\\\/]/, ''); // Regex to pull filename
-      const pathParts = filePath.split(/[\\\/]/);            // Regex to split filepath into directories
-      const lastDir = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '';  // pull last directory of filepath
-      itemName.textContent = `.../${lastDir}/${displayPath}`;   // declare "...\$lastDir\$filename"
-  
+      //const displayPath = filePath.replace(/^.*[\\\/]/, ''); // Regex to pull filename
+      const displayPath = filePath.split(/[\\\/]/).pop();
+      itemName.textContent = displayPath;
+
       // declare delete button for item block
       const deleteButton = document.createElement('button');
       deleteButton.classList.add('delete-button');
