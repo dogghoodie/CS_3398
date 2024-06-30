@@ -1,15 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
   // BASELINE DECLARATIONS
   const panel1 = document.getElementById('panel1');
-  const panel2 = document.getElementById('panel2'); 
+  const panel2 = document.getElementById('panel2');
   const panel3 = document.getElementById('panel3');
-  
+
   const setOutputPathButton = document.getElementById('setOutputPathButton');
   const outputPathInput = document.getElementById('outputPathInput');
   const runButton = document.getElementById('runButton');
   const selectFileButton = document.getElementById('selectFileButton');
   const selectFolderButton = document.getElementById('selectFolderButton');
   const cancelButton = document.getElementById('cancelButton'); // Add cancel button
+
+  // ipc-auth
+  const token = "vidcat";
+  const token2 = "vidcat";
 
   // prevents output path text box from being able to detect drag and drop for files
   // without this, dropping a file in that text box immediately plays the video in a new window
@@ -39,10 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // GET Core
   async function initializeCore() {
     try {
-      Core = await window.api.getCore();
+      Core = await window.api.getCore(token);
       console.log('Initial Core in Renderer.js:', Core);
       Core.outputPath = defaultOutputPath;
-      updateCore({outputPath: Core.outputPath});
+      updateCore({ outputPath: Core.outputPath });
       updateOrderedList();
     } catch (error) {
       console.error('Error initializing Core:', error.message);
@@ -54,8 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // SET Core
   async function updateCore(newData) {
     Core = { ...Core, ...newData };
-    await window.api.setCore(Core);
-    console.log('Updated Core in Renderer.js:', Core); 
+    await window.api.setCore(Core, token);
+    console.log('Updated Core in Renderer.js:', Core);
   }
 
   function removeItem(index) {
@@ -92,10 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (Core.state != "running") {
       const files = Core.fileList;
       const outputPath = Core.outputPath;
-  
+
       console.log('Files: ${JSON.stringify(files)}');
       console.log('Output path: ${outputPath}');
-  
+
       if (!outputPath) {
         console.error('Output path is not set');
         return;
@@ -106,13 +110,13 @@ document.addEventListener('DOMContentLoaded', () => {
         alert("Less than two filepaths defined!");
         return;
       }
-      
+
       try {
         Core.state = "running";
-        await updateCore({ state: Core.state});
-        const result = await window.api.concatVideos(files, outputPath);
+        await updateCore({ state: Core.state });
+        const result = await window.api.concatVideos(files, outputPath, token);
         console.log(result);
-        Core.state = await window.api.getCoreState();
+        Core.state = await window.api.getCoreState(token);
         console.log("Core State (Renderer): ", Core.state);
       } catch (error) {
         console.error(error);
@@ -130,11 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (Core.state === 'running') {
       console.log('Cancel button pressed during "running"');
       try {
-        const cancel = await window.api.cancelConcat();
+        const cancel = await window.api.cancelConcat(token);
         if (cancel) {
           console.log('Cancellation success!');
           Core.state = "idle";
-          await updateCore({ state: Core.state});
+          await updateCore({ state: Core.state });
           // Additional logic if needed on successful cancellation
         } else {
           console.error('Cancel failed!');
@@ -145,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       console.log('Cancel button pressed while not "running"');
     }
-    Core.state = await window.api.getCoreState();
+    Core.state = await window.api.getCoreState(token);
     console.log("Core State (Renderer): ", Core.state);
   });
 
@@ -180,11 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
       for (let i = 0; i < files.length; i++) {
         const filePath = files[i].path;
         try {
-          const stats = await window.api.getStats(filePath);
+          const stats = await window.api.getStats(filePath, token);
 
           if (stats.isDirectory) {
             // If it's a directory, query all files in the directory
-            const newFiles = await window.api.queryFiles(filePath, ['.mp4']); // Adjust formats as needed
+            const newFiles = await window.api.queryFiles(filePath, ['.mp4'], token); // Adjust formats as needed
             newFiles.forEach(file => {
               if (!Core.fileList.includes(file)) { // Avoid duplicate entries
                 Core.fileList.push(file);
@@ -209,13 +213,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // SELECT FILE BUTTON
   selectFileButton.addEventListener('click', async () => {
     try {
-      const file = await window.api.selectFile();
+      const file = await window.api.selectFile(token);
       if (file) {
         Core.fileList.push(file);
         await updateCore({ fileList: Core.fileList });
         updateOrderedList();
       }
-    } catch (error){
+    } catch (error) {
       console.error('Error selecting file:', error.message);
     }
   })
@@ -223,11 +227,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // SELECT FOLDER BUTTON
   selectFolderButton.addEventListener('click', async () => {
     try {
-      const folder = await window.api.selectFolder();
-      if (folder){
-        const newFiles = await window.api.queryFiles(folder, ['.mp4']);
+      const folder = await window.api.selectFolder(token);
+      if (folder) {
+        const newFiles = await window.api.queryFiles(folder, ['.mp4'], token);
         newFiles.forEach(file => {
-          if (!Core.fileList.includes(file)){
+          if (!Core.fileList.includes(file)) {
             Core.fileList.push(file);
           }
         });
@@ -240,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 
   // Prevent dragover and drop events for the output path text box
-  function preventDefaultBehavior(event){
+  function preventDefaultBehavior(event) {
     event.preventDefault();
     event.stopPropagation();
   }
@@ -253,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateOrderedList() {
     const orderedList = document.getElementById('ordered_list');
     orderedList.innerHTML = ''; // Clear existing list items
-  
+
     // iterate through each file of Core.fileList
     Core.fileList.forEach((filePath, index) => {
       // create a list item for each file of Core.fileList
@@ -267,12 +271,12 @@ document.addEventListener('DOMContentLoaded', () => {
       li.addEventListener('dragover', preventDefaultBehavior);
       li.addEventListener('dragleave', preventDefaultBehavior);
       li.addEventListener('drop', preventDefaultBehavior);
-  
+
       // create an item to be added to the ordered list
       const itemDiv = document.createElement('div');
       itemDiv.classList.add('item-block');
       itemDiv.title = filePath; // Add title attribute for tooltip
-      
+
       // create string for item name to parse
       const itemName = document.createElement('span');
       itemName.classList.add('item-name');
@@ -280,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const pathParts = filePath.split(/[\\\/]/);            // Regex to split filepath into directories
       const lastDir = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '';  // pull last directory of filepath
       itemName.textContent = `.../${lastDir}/${displayPath}`;   // declare "...\$lastDir\$filename"
-  
+
       // declare delete button for item block
       const deleteButton = document.createElement('button');
       deleteButton.classList.add('delete-button');
@@ -288,13 +292,13 @@ document.addEventListener('DOMContentLoaded', () => {
       deleteButton.addEventListener('click', () => {
         removeItem(index);
       });
-  
+
       // add itemName and deleteButton to item block
       itemDiv.appendChild(itemName);
       itemDiv.appendChild(deleteButton);
       li.appendChild(itemDiv);
       orderedList.appendChild(li);
-  
+
       // Add drag and drop event listeners to li elements
       li.addEventListener('dragstart', handleDragStart);
       li.addEventListener('dragover', handleDragOver);
@@ -302,17 +306,17 @@ document.addEventListener('DOMContentLoaded', () => {
       li.addEventListener('dragend', handleDragEnd);
     });
   }
-  
+
   // prevent default behavior for ordered list items
   function preventDefaultBehavior(event) {
     event.preventDefault();
     event.stopPropagation();
   }
-  
+
   //* **************************************** *//
   //         PANEL 2: ITEM BLOCKS               //
   //* **************************************** *//
-  
+
   // declare drag scroll variable
   let dragSrcEl = null;
 
