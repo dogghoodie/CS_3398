@@ -19,7 +19,8 @@ let Core = {
   state: "idle",
   fileList: [],
   outputPath: "",
-  percentage: 0,
+  percentageEncode: 0,
+  percentageConcat: 0,
   ffmpegProcess: null, // Store the ffmpeg encode here
   encodingProcesses: [],
 };
@@ -27,7 +28,6 @@ let Core = {
 //* **************************************** *//
 //             WINDOW LAUNCH                  //
 //* **************************************** *//
-
 
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
@@ -142,6 +142,17 @@ function resolveRelativePath(filepath) {
   return filepath;
 }
 
+// ensure directory existence
+function ensureDirectoryExistence(filePath) {
+  const dirname = path.dirname(filePath);
+  if (fs.existsSync(dirname)) {
+    return true;
+  }
+  ensureDirectoryExistence(dirname);
+  fs.mkdirSync(dirname);
+}
+
+
 // try to delete a given file repeatedly
 async function deleteFileWithRetry(filePath, retries = 5, delay = 500) {
   for (let i = 0; i < retries; i++) {
@@ -205,6 +216,23 @@ ipcMain.handle('get-core-state', async () => {
   return Core.state;
 });
 
+// get-core-percents
+// Renderer.js -> IPC.get-core-percents()
+// Reads the percents of "Core" from main.
+ipcMain.handle('get-core-percents', async () => {
+  return {
+    percentageEncode: Core.percentageEncode,
+    percentageConcat: Core.percentageConcat
+  };
+});
+
+// get-core-outputPath
+// Renderer.js -> IPC.get-core-outputpath()
+// Reads the (likely disambiguated) output path from main
+ipcMain.handle('get-core-outputpath', async () => {
+  return Core.outputPath;
+});
+
 // set-core
 // Renderer.js -> IPC.set-core() -> main.js.Core
 // writes status of Core struct from renderer.js to main.js
@@ -238,7 +266,15 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   let concatProgress = {}; // Object to store concatenation progress
 
   // Handle ambiguous filepath
-  Core.outputPath = resolveRelativePath(Core.outputPath);
+  if (Core.outputPath.startsWith('~')) {
+    Core.outputPath = resolveHome(Core.outputPath);
+  } else if (Core.outputPath.startsWith('/')) {
+    Core.outputPath = resolveRelativePath(Core.outputPath);
+  }
+
+  // if folder for output doesn't exist, create it
+  ensureDirectoryExistence(Core.outputPath);
+  
   outputPath = Core.outputPath;
   console.log("Disambiguated outputPath:", Core.outputPath);
 
@@ -279,7 +315,9 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           .on('progress', progress => {
             if (progress.percent !== undefined) {
               encodeProgress[index] = { percent: (progress.percent).toFixed(2) };
-              console.log(encodeProgress);
+              // console.log(encodeProgress[index]);
+              Core.percentageEncode = encodeProgress[index].percent;
+              console.log("Core percent Encode: ", Core.percentageEncode, "%");
             }
           })
           .on('end', () => {
@@ -318,7 +356,9 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
           .on('progress', progress => {
             if (progress.percent !== undefined) {
               concatProgress = { percent: (progress.percent / encodedFiles.length).toFixed(2) }; // Update concat progress
-              console.log(concatProgress);
+              Core.state = "running-concat";
+              Core.percentageConcat = concatProgress.percent;
+              console.log("Core percent Concat: ", Core.percentageConcat, "%");
             }
           })
           .on('end', () => {
@@ -356,7 +396,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
 // Cancel video concatenation
 ipcMain.handle('cancel-concat', async () => {
   console.log("cancel-concat called");
-  Core.state = "idle";
+  Core.state = "cancelled";
 
   // Cancel all encoding processes
   Core.encodingProcesses.forEach(process => {
@@ -364,7 +404,6 @@ ipcMain.handle('cancel-concat', async () => {
       process.kill('SIGINT');
     }
   });
-  Core.encodingProcesses = [];
 
   // Cancel concatenation process
   if (Core.ffmpegProcess) {
@@ -372,8 +411,11 @@ ipcMain.handle('cancel-concat', async () => {
     Core.ffmpegProcess = null; // Clear the ffmpeg process
   }
 
+  sleep(1000);
+  Core.encodingProcesses = [];
+  Core.percentageEncode = 0;
+  Core.percentageConcat = 0;
   cleanUpTempDir();
-  console.log("cancellation complete.");
   return 'FFmpeg process cancelled';
 });
 
@@ -412,3 +454,8 @@ ipcMain.handle('select-folder', async () => {
 
 })
 
+// print core
+// Renderer.js.Panel3.DebugButton -> IPC.print-core() -> output to console
+ipcMain.handle('print-core', async() => {
+  console.log("main core: ", Core);
+})
