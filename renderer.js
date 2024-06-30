@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const folder = await window.api.selectFolder();
       if (folder) {
         if (isPathSafe(folder)){
-          locationInput.value = folder;
+          locationInput.value = folder + "/";
         }
         else {
           showErrorModal("Cannot write to a protected directory");

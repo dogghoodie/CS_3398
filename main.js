@@ -265,6 +265,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   let encodeProgress = {}; // Object to store encoding progress
   let concatProgress = {}; // Object to store concatenation progress
 
+  /*
   // Handle ambiguous filepath
   if (Core.outputPath.startsWith('~')) {
     Core.outputPath = resolveHome(Core.outputPath);
@@ -274,7 +275,8 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
 
   // if folder for output doesn't exist, create it
   ensureDirectoryExistence(Core.outputPath);
-  
+  */
+
   outputPath = Core.outputPath;
   console.log("Disambiguated outputPath:", Core.outputPath);
 
