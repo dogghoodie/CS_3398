@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const stateLabel = document.getElementById('stateLabel');
   const progressLabel = document.getElementById('progressLabel');
   const browseButton = document.getElementById('browseButton');
+  const modal = document.getElementById ('errorModal');
+  modal.style.display = 'none';
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -146,7 +148,13 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const folder = await window.api.selectFolder();
       if (folder) {
-        locationInput.value = folder;
+        if (isPathSafe(folder)){
+          locationInput.value = folder;
+        }
+        else {
+          showErrorModal("Cannot write to a protected directory");
+        }
+        
       }
     } catch (error) {
       console.error('Error selecting folder:', error.message);
@@ -276,60 +284,117 @@ document.addEventListener('DOMContentLoaded', () => {
     if (files.length > 0) {
       for (let i = 0; i < files.length; i++) {
         const filePath = files[i].path;
-        try {
-          const stats = await window.api.getStats(filePath);
 
-          if (stats.isDirectory) {
-            // If it's a directory, query all files in the directory
-            const newFiles = await window.api.queryFiles(filePath, ['.mp4']); // Adjust formats as needed
-            newFiles.forEach(file => {
-              if (!Core.fileList.includes(file)) { // Avoid duplicate entries
-                Core.fileList.push(file);
+        if (isPathSafe(filePath)){
+          try {
+            const stats = await window.api.getStats(filePath);
+  
+            if (stats.isDirectory) {
+              // If it's a directory, query all files in the directory
+              const newFiles = await window.api.queryFiles(filePath, ['.mp4']); // Adjust formats as needed
+              newFiles.forEach(file => {
+                if (!Core.fileList.includes(file)) { // Avoid duplicate entries
+                  Core.fileList.push(file);
+                }
+              });
+            } else if (stats.isFile) {
+              // If it's a file, directly add the file to Core.fileList
+              if (!Core.fileList.includes(filePath)) { // Avoid duplicate entries
+                Core.fileList.push(filePath);
               }
-            });
-          } else if (stats.isFile) {
-            // If it's a file, directly add the file to Core.fileList
-            if (!Core.fileList.includes(filePath)) { // Avoid duplicate entries
-              Core.fileList.push(filePath);
             }
+  
+            await updateCore({ fileList: Core.fileList });
+            updateOrderedList();    // update Panel 2
+          } catch (error) {
+            console.error('Error querying files:', error.message);
           }
-
-          await updateCore({ fileList: Core.fileList });
-          updateOrderedList();    // update Panel 2
-        } catch (error) {
-          console.error('Error querying files:', error.message);
+        } else {
+          showErrorModal("Cannot import file from a protected directory");
         }
       }
     }
   });
+
+  const protectedDirectories = [
+    "\\",
+    "C:\\Windows",
+    "C:\\Recovery",
+    "C:\\Program Files",
+    "C:\\Program Files (x86)",
+    "C:\\AMD",
+    "C:\\Nvidia",
+    "/System",
+    "/Library"
+    ]
+
+    function isPathSafe(filePath) {
+      // Check if the filePath starts with any protected directory
+      if (protectedDirectories.some(dir => filePath.startsWith(dir))) {
+        return false;
+      }
+      // Additional check to prevent selecting C drive
+      if (filePath === "C:\\") {
+        return false;
+      }
+      return true;
+    }
+
+    function showErrorModal(message){
+      const modal = document.getElementById('errorModal');
+      const messageElement = modal.querySelector('.modal-message');
+      messageElement.textContent = message;
+      modal.style.display = 'block';
+
+      // Close modal on clicking close button
+      const closeBtn = modal.querySelector('.close');
+      closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+
+      const okButton = modal.querySelector('#okButton');
+      okButton.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+    }
 
   // SELECT FILE BUTTON
   selectFileButton.addEventListener('click', async () => {
     try {
       const file = await window.api.selectFile();
       if (file) {
-        Core.fileList.push(file);
-        await updateCore({ fileList: Core.fileList });
-        updateOrderedList();
+        console.log("Selected file:", file);
+        if (isPathSafe(file)) {
+          Core.fileList.push(file);
+          await updateCore({ fileList: Core.fileList });
+          updateOrderedList();
+        } else {
+          showErrorModal("Cannot import file from a protected directory")
+        }
       }
-    } catch (error){
+    } catch (error) {
       console.error('Error selecting file:', error.message);
     }
-  })
+  });
 
   // SELECT FOLDER BUTTON
   selectFolderButton.addEventListener('click', async () => {
     try {
       const folder = await window.api.selectFolder();
       if (folder){
-        const newFiles = await window.api.queryFiles(folder, ['.mp4']);
-        newFiles.forEach(file => {
+        console.log("Selected folder: ", folder);
+        if (isPathSafe(folder)){
+          const newFiles = await window.api.queryFiles(folder, ['.mp4']);
+          newFiles.forEach(file => {
           if (!Core.fileList.includes(file)){
             Core.fileList.push(file);
           }
-        });
-        await updateCore({ fileList: Core.fileList });
-        updateOrderedList();
+          });
+          await updateCore({ fileList: Core.fileList });
+          updateOrderedList();
+        } else {
+          showErrorModal("Cannot import files from a protected directory")
+        }
       }
     } catch (error) {
       console.error('Error selecting folder:', error.message);
@@ -373,11 +438,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // create string for item name to parse
       const itemName = document.createElement('span');
       itemName.classList.add('item-name');
-      const displayPath = filePath.replace(/^.*[\\\/]/, ''); // Regex to pull filename
-      const pathParts = filePath.split(/[\\\/]/);            // Regex to split filepath into directories
-      const lastDir = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '';  // pull last directory of filepath
-      itemName.textContent = `.../${lastDir}/${displayPath}`;   // declare "...\$lastDir\$filename"
-  
+      //const displayPath = filePath.replace(/^.*[\\\/]/, ''); // Regex to pull filename
+      const displayPath = filePath.split(/[\\\/]/).pop();
+      itemName.textContent = displayPath;
+
       // declare delete button for item block
       const deleteButton = document.createElement('button');
       deleteButton.classList.add('delete-button');

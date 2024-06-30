@@ -75,9 +75,9 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  // if (process.platform !== 'darwin') {
     app.quit();
-  }
+  // }
 });
 
 app.on('activate', () => {
@@ -85,6 +85,7 @@ app.on('activate', () => {
     createMainWindow();
   }
 });
+
 
 //* **************************************** *//
 //             MAIN.JS HELP FUNCTIONS         //
