@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const panel1 = document.getElementById('panel1');
   const panel2 = document.getElementById('panel2');
   const panel3 = document.getElementById('panel3');
-  
+
   const fileNameInput = document.getElementById('fileNameInput');
   const locationInput = document.getElementById('locationInput');
   const runButton = document.getElementById('runButton');
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const stateLabel = document.getElementById('stateLabel');
   const progressLabel = document.getElementById('progressLabel');
   const browseButton = document.getElementById('browseButton');
-  const modal = document.getElementById ('errorModal');
+  const modal = document.getElementById('errorModal');
   modal.style.display = 'none';
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -88,9 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("Progress Loop started.");
     while (Core.state !== "idle" && Core.state !== "cancelled") {
       // Update Core state and percentages
-      Core.state = await window.api.getCoreState();
+      Core.state = await window.api.getCoreState(token);
       // Core.outputPath = await window.api.getCoreOutputPath();
-      const percentages = await window.api.getCorePercents();
+      const percentages = await window.api.getCorePercents(token);
 
       Core.percentageEncode = percentages.percentageEncode;
       Core.percentageConcat = percentages.percentageConcat;
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
           stateLabel.textContent = "State: Concatenating";
         }
       }
-  
+
       // Ensure the progress values are finite numbers
       if (Core.state == "running-encode") {
         console.log("entered ProgressLoop running-encode");
@@ -131,11 +131,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         console.log("Progress bar value: ", progressBar.value);
       }
-  
+
       // Wait for a short delay before the next iteration
       await delay(100);
     }
-  
+
     // Reset progress bar when Core state is idle
     if (stateLabel.textContent == "State: Complete") {
       progressBar.value = 100;
@@ -144,21 +144,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     console.log("Exiting progress loop");
-    
+
   }
 
   // Panel 3: Browse Button press
   browseButton.addEventListener('click', async () => {
     try {
-      const folder = await window.api.selectFolder();
+      const folder = await window.api.selectFolder(token);
       if (folder) {
-        if (isPathSafe(folder)){
+        if (isPathSafe(folder)) {
           locationInput.value = folder + "/";
         }
         else {
           showErrorModal("Cannot write to a protected directory");
         }
-        
+
       }
     } catch (error) {
       console.error('Error selecting folder:', error.message);
@@ -172,10 +172,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const outputPath = locationInput.value + fileNameInput.value;
       Core.outputPath = outputPath;
-  
+
       console.log(`Files: ${JSON.stringify(files)}`);
       console.log(`Output path: ${outputPath}`);
-  
+
       if (!outputPath) {
         console.error('Output path is not set');
         return;
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-  
+
       try {
         Core.state = "running-encode";
         Core.percentageConcat = 0;
@@ -214,12 +214,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           progressLabel.textContent = `Exported to: ...${Core.outputPath}`;
         }
-        
+
       } else if (Core.state == "cancelled") {
         stateLabel.textContent = "State: Cancelled";
         progressLabel.textContent = "0%";
         Core.state = "idle";
-        await updateCore({ state: Core.state});
+        await updateCore({ state: Core.state });
       }
     } else {
       alert("vidCat already running!");
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
           console.log('Cancellation success!');
 
           Core.state = "cancelled";
-          await updateCore({ state: Core.state});
+          await updateCore({ state: Core.state });
           stateLabel.textContent = "State: Cancelled"
           progressLabel.textContent = "0%";
 
@@ -296,10 +296,10 @@ document.addEventListener('DOMContentLoaded', () => {
       for (let i = 0; i < files.length; i++) {
         const filePath = files[i].path;
 
-        if (isPathSafe(filePath)){
+        if (isPathSafe(filePath)) {
           try {
             const stats = await window.api.getStats(filePath, token);
-  
+
             if (stats.isDirectory) {
               // If it's a directory, query all files in the directory
               const newFiles = await window.api.queryFiles(filePath, ['.mp4'], token); // Adjust formats as needed
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Core.fileList.push(filePath);
               }
             }
-  
+
             await updateCore({ fileList: Core.fileList });
             updateOrderedList();    // update Panel 2
           } catch (error) {
@@ -337,37 +337,37 @@ document.addEventListener('DOMContentLoaded', () => {
     "C:\\Nvidia",
     "/System",
     "/Library"
-    ]
+  ]
 
-    function isPathSafe(filePath) {
-      // Check if the filePath starts with any protected directory
-      if (protectedDirectories.some(dir => filePath.startsWith(dir))) {
-        return false;
-      }
-      // Additional check to prevent selecting C drive
-      if (filePath === "C:\\") {
-        return false;
-      }
-      return true;
+  function isPathSafe(filePath) {
+    // Check if the filePath starts with any protected directory
+    if (protectedDirectories.some(dir => filePath.startsWith(dir))) {
+      return false;
     }
-
-    function showErrorModal(message){
-      const modal = document.getElementById('errorModal');
-      const messageElement = modal.querySelector('.modal-message');
-      messageElement.textContent = message;
-      modal.style.display = 'block';
-
-      // Close modal on clicking close button
-      const closeBtn = modal.querySelector('.close');
-      closeBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
-      });
-
-      const okButton = modal.querySelector('#okButton');
-      okButton.addEventListener('click', () => {
-        modal.style.display = 'none';
-      });
+    // Additional check to prevent selecting C drive
+    if (filePath === "C:\\") {
+      return false;
     }
+    return true;
+  }
+
+  function showErrorModal(message) {
+    const modal = document.getElementById('errorModal');
+    const messageElement = modal.querySelector('.modal-message');
+    messageElement.textContent = message;
+    modal.style.display = 'block';
+
+    // Close modal on clicking close button
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    const okButton = modal.querySelector('#okButton');
+    okButton.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+  }
 
   // SELECT FILE BUTTON
   selectFileButton.addEventListener('click', async () => {
@@ -393,14 +393,14 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
 
       const folder = await window.api.selectFolder(token);
-      if (folder){
+      if (folder) {
         console.log("Selected folder: ", folder);
-        if (isPathSafe(folder)){
+        if (isPathSafe(folder)) {
           const newFiles = await window.api.queryFiles(folder, ['.mp4'], token);
           newFiles.forEach(file => {
-          if (!Core.fileList.includes(file)){
-            Core.fileList.push(file);
-          }
+            if (!Core.fileList.includes(file)) {
+              Core.fileList.push(file);
+            }
           });
           await updateCore({ fileList: Core.fileList });
           updateOrderedList();
