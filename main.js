@@ -132,7 +132,7 @@ function resolveHome(filepath) {
 
 // resolve Relative Path
 function resolveRelativePath(filepath) {
-  if (filepath.startsWith('/')) {
+  if (filepath.startsWith('/') && !filepath.startsWith('/Users')) {
     const resolvedPath = path.resolve(process.cwd(), `.${filepath}`);
     const directory = path.dirname(resolvedPath);
     if (!fs.existsSync(directory)) {
@@ -289,17 +289,14 @@ ipcMain.handle('concat-videos', async (event, files, outputPath, token) => {
     let encodeProgress = {}; // Object to store encoding progress
     let concatProgress = {}; // Object to store concatenation progress
 
-    /*
     // Handle ambiguous filepath
     if (Core.outputPath.startsWith('~')) {
       Core.outputPath = resolveHome(Core.outputPath);
     } else if (Core.outputPath.startsWith('/')) {
       Core.outputPath = resolveRelativePath(Core.outputPath);
     }
-
     // if folder for output doesn't exist, create it
     ensureDirectoryExistence(Core.outputPath);
-    */
 
     outputPath = Core.outputPath;
     console.log("Disambiguated outputPath:", Core.outputPath);
