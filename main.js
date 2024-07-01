@@ -20,7 +20,8 @@ let Core = {
   state: "idle",
   fileList: [],
   outputPath: "",
-  percentage: 0,
+  percentageEncode: 0,
+  percentageConcat: 0,
   ffmpegProcess: null, // Store the ffmpeg encode here
   encodingProcesses: [],
 };
@@ -28,7 +29,6 @@ let Core = {
 //* **************************************** *//
 //             WINDOW LAUNCH                  //
 //* **************************************** *//
-
 
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
@@ -143,6 +143,17 @@ function resolveRelativePath(filepath) {
   return filepath;
 }
 
+// ensure directory existence
+function ensureDirectoryExistence(filePath) {
+  const dirname = path.dirname(filePath);
+  if (fs.existsSync(dirname)) {
+    return true;
+  }
+  ensureDirectoryExistence(dirname);
+  fs.mkdirSync(dirname);
+}
+
+
 // try to delete a given file repeatedly
 async function deleteFileWithRetry(filePath, retries = 5, delay = 500) {
   for (let i = 0; i < retries; i++) {
@@ -220,6 +231,23 @@ ipcMain.handle('get-core-state', async (event, token) => {
   }
 });
 
+// get-core-percents
+// Renderer.js -> IPC.get-core-percents()
+// Reads the percents of "Core" from main.
+ipcMain.handle('get-core-percents', async () => {
+  return {
+    percentageEncode: Core.percentageEncode,
+    percentageConcat: Core.percentageConcat
+  };
+});
+
+// get-core-outputPath
+// Renderer.js -> IPC.get-core-outputpath()
+// Reads the (likely disambiguated) output path from main
+ipcMain.handle('get-core-outputpath', async () => {
+  return Core.outputPath;
+});
+
 // set-core
 // Renderer.js -> IPC.set-core() -> main.js.Core
 // writes status of Core struct from renderer.js to main.js
@@ -254,16 +282,25 @@ ipcMain.handle('get-stats', async (event, filePath, token) => {
 // concat-videos
 // Renderer.js.Panel3 -> IPC.concat-videos() -> ffmpeg
 // Calls ffmpeg concat execution
-
-ipcMain.handle('concat-videos', async (event, files, outputPath, token) => {
+ipcMain.handle('concat-videos', async (event, files, outputPath) => {
   if (token == tokenAuth) {
     console.log("Valid request");
     // Variables to store progress information
     let encodeProgress = {}; // Object to store encoding progress
     let concatProgress = {}; // Object to store concatenation progress
 
+    /*
     // Handle ambiguous filepath
-    Core.outputPath = resolveRelativePath(Core.outputPath);
+    if (Core.outputPath.startsWith('~')) {
+      Core.outputPath = resolveHome(Core.outputPath);
+    } else if (Core.outputPath.startsWith('/')) {
+      Core.outputPath = resolveRelativePath(Core.outputPath);
+    }
+
+    // if folder for output doesn't exist, create it
+    ensureDirectoryExistence(Core.outputPath);
+    */
+
     outputPath = Core.outputPath;
     console.log("Disambiguated outputPath:", Core.outputPath);
 
@@ -274,14 +311,17 @@ ipcMain.handle('concat-videos', async (event, files, outputPath, token) => {
       if (!Array.isArray(files) || files.length === 0) {
         return reject('No files provided');
       }
+
       if (typeof outputPath !== 'string' || outputPath.trim() === '') {
         return reject(new Error('Invalid output path'));
       }
+
       files.forEach(file => {
         if (typeof file !== 'string' || file.trim() === '') {
           return reject(new Error('Invalid file path'));
         }
       });
+
       if (!fs.existsSync('./tempDir')) {
         fs.mkdirSync('./tempDir');
       }
@@ -301,7 +341,9 @@ ipcMain.handle('concat-videos', async (event, files, outputPath, token) => {
             .on('progress', progress => {
               if (progress.percent !== undefined) {
                 encodeProgress[index] = { percent: (progress.percent).toFixed(2) };
-                console.log(encodeProgress);
+                // console.log(encodeProgress[index]);
+                Core.percentageEncode = encodeProgress[index].percent;
+                console.log("Core percent Encode: ", Core.percentageEncode, "%");
               }
             })
             .on('end', () => {
@@ -340,7 +382,9 @@ ipcMain.handle('concat-videos', async (event, files, outputPath, token) => {
             .on('progress', progress => {
               if (progress.percent !== undefined) {
                 concatProgress = { percent: (progress.percent / encodedFiles.length).toFixed(2) }; // Update concat progress
-                console.log(concatProgress);
+                Core.state = "running-concat";
+                Core.percentageConcat = concatProgress.percent;
+                console.log("Core percent Concat: ", Core.percentageConcat, "%");
               }
             })
             .on('end', () => {
@@ -373,8 +417,8 @@ ipcMain.handle('concat-videos', async (event, files, outputPath, token) => {
         })
         .catch(err => reject(err));
     });
-  } else {
-    console.error("Invalid request")
+  } else { 
+    console.error("Invalid request");
   }
 });
 
@@ -399,11 +443,15 @@ ipcMain.handle('cancel-concat', async (event, token) => {
     }
     cleanUpTempDir();
     console.log("cancellation complete.");
+    sleep(1000);
+    Core.encodingProcesses = [];
+    Core.percentageEncode = 0;
+    Core.percentageConcat = 0;
+    cleanUpTempDir();
     return 'FFmpeg process cancelled';
 
   } else {
     console.error("Invalid request");
-
   }
 });
 
@@ -450,3 +498,12 @@ ipcMain.handle('select-folder', async (event, token) => {
 
 });
 
+// print core
+// Renderer.js.Panel3.DebugButton -> IPC.print-core() -> output to console
+ipcMain.handle('print-core', async(event, token) => {
+  if (token == tokenAuth ) {
+    console.log("main core: ", Core);
+  } else {
+    console.error("Invalid request");
+  }
+})
