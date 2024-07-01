@@ -227,7 +227,7 @@ ipcMain.handle('get-core-state', async (event, token) => {
   if (token == tokenAuth) {
     return Core.state;
   } else {
-    console.error("Invalid request");
+    console.error("Invalid request!!");
   }
 });
 
@@ -282,7 +282,7 @@ ipcMain.handle('get-stats', async (event, filePath, token) => {
 // concat-videos
 // Renderer.js.Panel3 -> IPC.concat-videos() -> ffmpeg
 // Calls ffmpeg concat execution
-ipcMain.handle('concat-videos', async (event, files, outputPath) => {
+ipcMain.handle('concat-videos', async (event, files, outputPath, token) => {
   if (token == tokenAuth) {
     console.log("Valid request");
     // Variables to store progress information
@@ -417,7 +417,7 @@ ipcMain.handle('concat-videos', async (event, files, outputPath) => {
         })
         .catch(err => reject(err));
     });
-  } else { 
+  } else {
     console.error("Invalid request");
   }
 });
@@ -500,8 +500,8 @@ ipcMain.handle('select-folder', async (event, token) => {
 
 // print core
 // Renderer.js.Panel3.DebugButton -> IPC.print-core() -> output to console
-ipcMain.handle('print-core', async(event, token) => {
-  if (token == tokenAuth ) {
+ipcMain.handle('print-core', async (event, token) => {
+  if (token == tokenAuth) {
     console.log("main core: ", Core);
   } else {
     console.error("Invalid request");
