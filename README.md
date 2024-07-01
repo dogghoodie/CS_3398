@@ -1,4 +1,5 @@
-# **vidCat**
+<img src="splash.png" alt="VidCat" width="500" height="500">
+
 
 ## Quick Links
 1. [Installation](#installation)
